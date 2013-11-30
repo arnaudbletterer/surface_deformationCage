@@ -56,7 +56,7 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
-         <widget class="QListView" name="list_cages"/>
+         <widget class="QListWidget" name="list_cages"/>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -78,10 +78,29 @@
     </layout>
    </item>
    <item>
-    <widget class="QCheckBox" name="check_link">
-     <property name="text">
-      <string>linked</string>
+    <widget class="QGroupBox" name="group_linkState">
+     <property name="title">
+      <string>Link state</string>
      </property>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QRadioButton" name="radio_linked">
+        <property name="text">
+         <string>Linked</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="radio_unlinked">
+        <property name="text">
+         <string>Unlinked</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
   </layout>

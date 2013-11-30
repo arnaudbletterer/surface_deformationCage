@@ -35,8 +35,8 @@ private:
     MapHandlerGen* m_selectedMap;
 
 public slots:
-    void addMapToList(MapHandlerGen* m);
-    void removeMapFromList(MapHandlerGen* m);
+    void addMapToLists(MapHandlerGen* m);
+    void removeMapFromLists(MapHandlerGen* m);
     void addAttributeToList(unsigned int orbit, const QString& nameAttr);
 
     void selectedMapChanged();

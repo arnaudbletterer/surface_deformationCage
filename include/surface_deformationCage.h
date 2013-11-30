@@ -18,15 +18,16 @@ namespace CGoGN
 namespace SCHNApps
 {
 
-struct MapCageParameters
+struct CageCoordinatesParameters
 {
-    MapCageParameters();
-    ~MapCageParameters();
+    CageCoordinatesParameters();
+    ~CageCoordinatesParameters();
 
     void start();
     void stop();
 
     bool m_initialized;
+    VertexAttribute<PFP2::VEC3> coordinates;
 };
 
 class Surface_DeformationCage_Plugin : public PluginProcessing
@@ -61,7 +62,7 @@ private:
     QAction* m_deformationCageAction;
 
 public:
-    QHash<QString, MapCageParameters> h_parameterSet;
+    QHash<QString, CageCoordinatesParameters> h_parameterSet;
 };
 
 } // namespace SCHNApps

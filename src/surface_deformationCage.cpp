@@ -8,19 +8,19 @@ namespace CGoGN
 namespace SCHNApps
 {
 
-MapCageParameters::MapCageParameters() :
+CageCoordinatesParameters::CageCoordinatesParameters() :
     m_initialized(false)
 {}
 
-MapCageParameters::~MapCageParameters() {}
+CageCoordinatesParameters::~CageCoordinatesParameters() {}
 
-void MapCageParameters::start() {
+void CageCoordinatesParameters::start() {
     if(!m_initialized) {
         m_initialized = true;
     }
 }
 
-void MapCageParameters::stop() {
+void CageCoordinatesParameters::stop() {
     if(m_initialized) {
         m_initialized = false;
     }
