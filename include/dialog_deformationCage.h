@@ -5,6 +5,8 @@
 
 #include "Geometry/vector_gen.h"
 
+#include "mapHandler.h"
+
 namespace CGoGN
 {
 
@@ -14,32 +16,36 @@ namespace SCHNApps
 class SCHNApps;
 class MapHandlerGen;
 class Surface_DeformationCage_Plugin;
-class MapCageParameters;
+struct MapParameters;
 
 class Dialog_DeformationCage : public QDialog, public Ui::Dialog_DeformationCage
 {
     Q_OBJECT
 
 public:
-    Dialog_DeformationCage(SCHNApps* s);
+    Dialog_DeformationCage(SCHNApps* s, Surface_DeformationCage_Plugin* p);
 
-    /*
-      * Fonction qui met  jour l'apparence de l'interface en fonction de la configuration de chaque carte
-      */
-    void updateAppearanceFromPlugin(bool independant, bool initialized) {
-
-    }
+    void updateAppearanceFromPlugin();
 
 private:
     SCHNApps* m_schnapps;
-    MapHandlerGen* m_selectedMap;
+    MapHandlerGen* m_selectedObject;
+    MapHandlerGen* m_selectedCage;
+    Surface_DeformationCage_Plugin* m_plugin;
 
 public slots:
     void addMapToLists(MapHandlerGen* m);
     void removeMapFromLists(MapHandlerGen* m);
-    void addAttributeToList(unsigned int orbit, const QString& nameAttr);
+    void addAttributeToObjectList(unsigned int orbit, const QString& nameAttr);
+    void addAttributeToCageList(unsigned int orbit, const QString& nameAttr);
 
-    void selectedMapChanged();
+    void selectedObjectChanged();
+    void selectedCageChanged();
+
+    void linkStateToggled(bool b);
+
+    MapHandlerGen* getSelectedObject();
+    MapHandlerGen* getSelectedCage();
 };
 
 } // namespace SCHNApps

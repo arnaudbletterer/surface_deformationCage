@@ -3,8 +3,6 @@
 
 #include "plugin_processing.h"
 
-#include "dialog_deformationCage.h"
-
 #include "Algo/Modelisation/voxellisation.h"
 #include "Algo/Modelisation/triangulation.h"
 #include "Algo/MC/marchingcube.h"
@@ -12,22 +10,30 @@
 
 #include "Utils/chrono.h"
 
+#include "dialog_deformationCage.h"
+
+#include "mapHandler.h"
+
+#include "MVCCoordinates.h"
+
 namespace CGoGN
 {
 
 namespace SCHNApps
 {
 
-struct CageCoordinatesParameters
+struct MapParameters
 {
-    CageCoordinatesParameters();
-    ~CageCoordinatesParameters();
+    MapParameters();
+    ~MapParameters();
 
     void start();
     void stop();
 
     bool m_initialized;
-    VertexAttribute<PFP2::VEC3> coordinates;
+    bool m_linked;
+    bool m_toComputeMVC;
+    std::vector<PFP2::VEC3> m_coordinates;
 };
 
 class Surface_DeformationCage_Plugin : public PluginProcessing
@@ -48,12 +54,16 @@ public:
 private slots:
 	void mapAdded(MapHandlerGen* map);
 	void mapRemoved(MapHandlerGen* map);
-    void attributeModified(unsigned int orbit, QString nameAttr);
 
-    void currentMapSelectedChangedFromDialog();
-    void currentAttributeIndexChangedFromDialog(QString nameAttr);
+    void attributeModified(unsigned int orbit, QString nameAttr);
+    void moveObjectsPointsFromCageMovement(MapHandlerGen* o, MapHandlerGen* c, const QString& objectNameAttr, const QString& cageNameAttr);
 
     void openDeformationCageDialog();
+
+    void computeMVCFromDialog();
+    void computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
+    void computePointMVCFromCage(Dart vertex, const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
+    PFP2::REAL computeMVC(PFP2::VEC3 p, Dart vertex, PFP2::MAP* cage, const QString& cageNameAttr);
 
 public slots:
 
@@ -62,7 +72,7 @@ private:
     QAction* m_deformationCageAction;
 
 public:
-    QHash<QString, CageCoordinatesParameters> h_parameterSet;
+    QHash<QString, MapParameters> h_parameterSet;
 };
 
 } // namespace SCHNApps
