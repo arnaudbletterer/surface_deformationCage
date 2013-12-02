@@ -202,6 +202,7 @@ void Dialog_DeformationCage::linkStateToggled(bool b) {
                 + m_selectedCage->getName()
                 + combo_cagePositionAttribute->currentText()];
         m_plugin->computeMVCFromDialog();
+        p.m_linked = true;
     }
 }
 

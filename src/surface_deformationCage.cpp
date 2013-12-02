@@ -74,25 +74,25 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
         {
             MapHandlerGen* mhg_current = static_cast<MapHandlerGen*>(m_schnapps->getMap(it.key()));
             attributes = mhg_current->getAttributeSet(orbit);
-            foreach(QString attribute, attributes)
+            for(AttributeSet::const_iterator attribute = attributes.constBegin(); attribute != attributes.constEnd(); ++attribute)
             {
                 //On considère d'abord la carte modifiée comme étant la cage
-                MapParameters& p = h_parameterSet[mhg_current->getName()+attribute+mhg_modified->getName()+nameAttr];
+                MapParameters& p = h_parameterSet[mhg_current->getName()+attribute.key()+mhg_modified->getName()+nameAttr];
                 if(p.m_initialized)
                 {   //Si des coordonnées ont été calculées
                     if(p.m_linked)
                     {   //Si les deux cartes sont actuellement liées
-                        moveObjectsPointsFromCageMovement(mhg_current, mhg_modified, attribute, nameAttr);
+                        moveObjectsPointsFromCageMovement(mhg_current, mhg_modified, attribute.key(), nameAttr);
                     }
                 }
 
                 //On considère ensuite la carte modifiée comme étant l'objet
-                p = h_parameterSet[mhg_modified->getName()+nameAttr+mhg_current->getName()+attribute];
+                p = h_parameterSet[mhg_modified->getName()+nameAttr+mhg_current->getName()+attribute.key()];
                 if(p.m_initialized)
                 {   //Si des coordonnées ont été calculées
                     if(p.m_linked)
                     {   //Si les deux cartes sont actuellement liées
-                        moveObjectsPointsFromCageMovement(mhg_modified, mhg_current, nameAttr, attribute);
+                        moveObjectsPointsFromCageMovement(mhg_modified, mhg_current, nameAttr, attribute.key());
                     }
                 }
             }
