@@ -51,6 +51,8 @@ public:
 	virtual bool enable();
 	virtual void disable();
 
+    void computeMVCFromDialog();
+
 private slots:
 	void mapAdded(MapHandlerGen* map);
 	void mapRemoved(MapHandlerGen* map);
@@ -60,9 +62,9 @@ private slots:
 
     void openDeformationCageDialog();
 
-    void computeMVCFromDialog();
     void computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
-    void computePointMVCFromCage(Dart vertex, const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
+    void computePointMVCFromCage(Dart vertex, const QString& objectName, const QString& cageName, const QString& cageNameAttr,
+                                 VertexAttribute<PFP_STANDARD::VEC3> position, VertexAttribute<MVCCoordinates> coordinates, PFP2::MAP* object, PFP2::MAP* cage);
     PFP2::REAL computeMVC(PFP2::VEC3 p, Dart vertex, PFP2::MAP* cage, const QString& cageNameAttr);
 
 public slots:

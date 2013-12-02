@@ -77,13 +77,13 @@ void Dialog_DeformationCage::removeMapFromLists(MapHandlerGen* m)
 
     if(m_selectedObject == m)
     {
-        disconnect(m_selectedObject, SIGNAL(attributeAdded(unsigned int, const QString&)), this, SLOT(addAttributeToList(unsigned int, const QString&)));
+        disconnect(m_selectedObject, SIGNAL(attributeAdded(unsigned int, const QString&)), this, SLOT(addAttributeToObjectList(unsigned int, const QString&)));
         m_selectedObject = NULL;
     }
 
     if(m_selectedCage == m)
     {
-        disconnect(m_selectedCage, SIGNAL(attributeAdded(unsigned int, const QString&)), this, SLOT(addAttributeToList(unsigned int, const QString&)));
+        disconnect(m_selectedCage, SIGNAL(attributeAdded(unsigned int, const QString&)), this, SLOT(addAttributeToCageList(unsigned int, const QString&)));
         m_selectedCage = NULL;
     }
 }
@@ -116,8 +116,9 @@ void Dialog_DeformationCage::addAttributeToCageList(unsigned int orbit, const QS
 
 void Dialog_DeformationCage::selectedObjectChanged()
 {
-    if(m_selectedObject)
-        disconnect(m_selectedObject, SIGNAL(attributeAdded(unsigned int, const QString&)), this, SLOT(addAttributeToList(unsigned int, const QString&)));
+    if(m_selectedObject) {
+        disconnect(m_selectedObject, SIGNAL(attributeAdded(unsigned int, const QString&)), this, SLOT(addAttributeToObjectList(unsigned int, const QString&)));
+    }
 
     QList<QListWidgetItem*> currentItems = list_objects->selectedItems();
     if(!currentItems.empty())
@@ -141,7 +142,7 @@ void Dialog_DeformationCage::selectedObjectChanged()
         }
 
         m_selectedObject = mh;
-        connect(m_selectedObject, SIGNAL(attributeAdded(unsigned int, const QString&)), this, SLOT(addAttributeToList(unsigned int, const QString&)));
+        connect(m_selectedObject, SIGNAL(attributeAdded(unsigned int, const QString&)), this, SLOT(addAttributeToObjectList(unsigned int, const QString&)));
     }
     else
         m_selectedObject = NULL;
@@ -150,7 +151,9 @@ void Dialog_DeformationCage::selectedObjectChanged()
 void Dialog_DeformationCage::selectedCageChanged()
 {
     if(m_selectedCage)
-        disconnect(m_selectedCage, SIGNAL(attributeAdded(unsigned int, const QString&)), this, SLOT(addAttributeToList(unsigned int, const QString&)));
+    {
+        disconnect(m_selectedCage, SIGNAL(attributeAdded(unsigned int, const QString&)), this, SLOT(addAttributeToCageList(unsigned int, const QString&)));
+    }
 
     QList<QListWidgetItem*> currentItems = list_cages->selectedItems();
     if(!currentItems.empty())
@@ -174,7 +177,7 @@ void Dialog_DeformationCage::selectedCageChanged()
         }
 
         m_selectedCage = mh;
-        connect(m_selectedCage, SIGNAL(attributeAdded(unsigned int, const QString&)), this, SLOT(addAttributeToList(unsigned int, const QString&)));
+        connect(m_selectedCage, SIGNAL(attributeAdded(unsigned int, const QString&)), this, SLOT(addAttributeToCageList(unsigned int, const QString&)));
     }
     else
         m_selectedCage = NULL;
@@ -198,10 +201,7 @@ void Dialog_DeformationCage::linkStateToggled(bool b) {
                 + combo_objectPositionAttribute->currentText()
                 + m_selectedCage->getName()
                 + combo_cagePositionAttribute->currentText()];
-        if(p.m_initialized)
-        {
-            p.m_linked = b;
-        }
+        m_plugin->computeMVCFromDialog();
     }
 }
 

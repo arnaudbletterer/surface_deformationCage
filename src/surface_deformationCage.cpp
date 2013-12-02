@@ -152,26 +152,6 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
     {   //Si les coordonnées sont à calculer
         MapHandler<PFP2>* mh_object = static_cast<MapHandler<PFP2>*>(m_schnapps->getMap(objectName));
         PFP2::MAP* object = mh_object->getMap();
-
-        TraversorV<PFP2::MAP> trav_vert_object(*object);
-        for(Dart it = trav_vert_object.begin(); it!=trav_vert_object.end(); it = trav_vert_object.next())
-        {
-            computePointMVCFromCage(it, objectName, cageName, objectNameAttr, cageNameAttr);
-        }
-        p.m_toComputeMVC = false;
-    }
-}
-
-/*
-  * Fonction qui calcule les coordonnées MVC d'un point par rapport à une cage
-  */
-void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr)
-{
-    MapParameters& p = h_parameterSet[objectName+objectNameAttr+cageName+cageNameAttr];
-    if(p.m_initialized)
-    {
-        MapHandler<PFP2>* mh_object = static_cast<MapHandler<PFP2>*>(m_schnapps->getMap(objectName));
-        PFP2::MAP* object = mh_object->getMap();
         MapHandler<PFP2>* mh_cage = static_cast<MapHandler<PFP2>*>(m_schnapps->getMap(cageName));
         PFP2::MAP* cage = mh_cage->getMap();
 
@@ -188,26 +168,45 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
             return;
         }
 
-        coordinates[vertex].clear();
-        //coordinates[vertex].reserve();
-
-        PFP2::REAL c;
-        PFP2::REAL sumMVC(0);
-        unsigned int j=0;
-
-        TraversorV<PFP2::MAP> trav_vert_cage(*cage);
-        for(Dart it = trav_vert_cage.begin(); it!=trav_vert_cage.end(); it = trav_vert_cage.next())
-        {   //On parcourt l'ensemble des sommets de la cage
-            c = computeMVC(position[vertex], it, cage, cageNameAttr);
-            coordinates[vertex].push_back(c);
-            sumMVC += c;
-            ++j;
-        }
-
-        for(unsigned int i=0; i<j; ++i)
+        TraversorV<PFP2::MAP> trav_vert_object(*object);
+        int i=0;
+        for(Dart it = trav_vert_object.begin(); it!=trav_vert_object.end(); it = trav_vert_object.next())
         {
-            coordinates[vertex][i] /= sumMVC;
+            if(i%1000==0)
+                CGoGNout << i << CGoGNendl;
+            computePointMVCFromCage(it, objectName, cageName, cageNameAttr, position, coordinates, object, cage);
+            ++i;
         }
+        p.m_toComputeMVC = false;
+    }
+}
+
+/*
+  * Fonction qui calcule les coordonnées MVC d'un point par rapport à une cage
+  */
+void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const QString& objectName, const QString& cageName,
+                                                             const QString& cageNameAttr, VertexAttribute<PFP2::VEC3> position,
+                                                             VertexAttribute<MVCCoordinates> coordinates, PFP2::MAP* object,
+                                                             PFP2::MAP* cage)
+{
+    PFP2::REAL c;
+    PFP2::REAL sumMVC(0);
+    unsigned int j=0;
+
+    TraversorV<PFP2::MAP> trav_vert_cage(*cage);
+
+    for(Dart it = trav_vert_cage.begin(); it!=trav_vert_cage.end(); it = trav_vert_cage.next())
+    {
+        ++j;
+        sumMVC += c;
+    }
+
+    coordinates[vertex].setCoordinates(std::vector<PFP2::REAL>(j));
+
+    for(Dart it = trav_vert_cage.begin(); it!=trav_vert_cage.end(); it = trav_vert_cage.next())
+    {   //On parcourt l'ensemble des sommets de la cage
+        c = computeMVC(position[vertex], it, cage, cageNameAttr);
+        coordinates[vertex][c/sumMVC];
     }
 }
 
