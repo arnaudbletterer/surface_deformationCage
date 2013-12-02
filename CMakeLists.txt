@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 SET( PLUGIN_NAME Surface_DeformationCage )
 
-SET( PLUGIN_ROOT_DIR ${SCHNApps_ROOT_DIR}/../../Plugins/surface_deformationCage )
+SET( PLUGIN_ROOT_DIR ${SCHNApps_ROOT_DIR}/../../SCHNAppsPlugins/surface_deformationCage )
 
 INCLUDE_DIRECTORIES(
 	${PLUGIN_ROOT_DIR}/include

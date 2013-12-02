@@ -64,7 +64,7 @@ private slots:
 
     void computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
     void computePointMVCFromCage(Dart vertex, const QString& objectName, const QString& cageName, const QString& cageNameAttr,
-                                 VertexAttribute<PFP_STANDARD::VEC3> position, VertexAttribute<MVCCoordinates> coordinates, PFP2::MAP* object, PFP2::MAP* cage);
+                                 VertexAttribute<PFP_STANDARD::VEC3> position);
     PFP2::REAL computeMVC(PFP2::VEC3 p, Dart vertex, PFP2::MAP* cage, const QString& cageNameAttr);
 
 public slots:
