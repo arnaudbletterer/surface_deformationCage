@@ -63,9 +63,9 @@ private slots:
     void openDeformationCageDialog();
 
     void computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
-    void computePointMVCFromCage(Dart vertex, const QString& objectName, const QString& cageName, const QString& cageNameAttr,
-                                 VertexAttribute<PFP_STANDARD::VEC3> position, PFP2::MAP* objectMap, PFP2::MAP* cageMap, VertexAttribute<MVCCoordinates>& coordinates);
-    PFP2::REAL computeMVC(PFP2::VEC3 p, Dart vertex, PFP2::MAP* cage, const QString& cageNameAttr);
+    void computePointMVCFromCage(PFP2::VEC3 pt, Dart vertex, const QString& objectName, const QString& cageName,
+                                 VertexAttribute<PFP_STANDARD::VEC3> position, VertexAttribute<MVCCoordinates> coordinates);
+    PFP2::REAL computeMVC(PFP2::VEC3 pt, Dart vertex, PFP2::MAP* object, VertexAttribute<PFP_STANDARD::VEC3> position);
 
 public slots:
 
