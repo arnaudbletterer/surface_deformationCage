@@ -108,15 +108,17 @@ void Surface_DeformationCage_Plugin::moveObjectsPointsFromCageMovement(MapHandle
     PFP2::MAP* cage = mh_cage->getMap();
 
     VertexAttribute<PFP2::VEC3> objectPosition = object->getAttribute<PFP2::VEC3, VERTEX>(objectNameAttr.toStdString());
-    VertexAttribute<PFP2::VEC3> cagePosition = cage->getAttribute<PFP2::VEC3, VERTEX>(cageNameAttr.toStdString());
     VertexAttribute<MVCCoordinates> objectCoordinates = object->getAttribute<MVCCoordinates, VERTEX>("MVCCoordinates");
 
+    VertexAttribute<PFP2::VEC3> cagePosition = cage->getAttribute<PFP2::VEC3, VERTEX>(cageNameAttr.toStdString());
+
     TraversorV<PFP2::MAP> trav_vert_object(*object);
-    TraversorV<PFP2::MAP> trav_vert_cage(*cage);
+
     for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d = trav_vert_object.next())
     {   //Pour chaque sommet de l'objet
         objectPosition[d] = PFP2::VEC3(0);
         unsigned int j = 0;
+        TraversorV<PFP2::MAP> trav_vert_cage(*cage);
         for(Dart dd = trav_vert_cage.begin(); dd!=trav_vert_cage.end(); dd = trav_vert_cage.next())
         {
             objectPosition[d] += objectCoordinates[d][j]*cagePosition[dd];
@@ -152,6 +154,8 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
     {   //Si les coordonnées sont à calculer
         MapHandler<PFP2>* mh_object = static_cast<MapHandler<PFP2>*>(m_schnapps->getMap(objectName));
         PFP2::MAP* object = mh_object->getMap();
+        MapHandler<PFP2>* mh_cage = static_cast<MapHandler<PFP2>*>(m_schnapps->getMap(cageName));
+        PFP2::MAP* cage = mh_cage->getMap();
 
         VertexAttribute<PFP2::VEC3> position = object->getAttribute<PFP2::VEC3, VERTEX>(objectNameAttr.toStdString());
 
@@ -181,7 +185,6 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const QString& objectName, const QString& cageName,
                                                              const QString& cageNameAttr, VertexAttribute<PFP2::VEC3> position)
 {
-
     MapHandler<PFP2>* mh_object = static_cast<MapHandler<PFP2>*>(m_schnapps->getMap(objectName));
     PFP2::MAP* object = mh_object->getMap();
     MapHandler<PFP2>* mh_cage = static_cast<MapHandler<PFP2>*>(m_schnapps->getMap(cageName));
