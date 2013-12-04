@@ -220,7 +220,6 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(PFP2::VEC3 pt, Dart
     for(Dart d = trav_vert_cage.begin(); d!=trav_vert_cage.end(); d = trav_vert_cage.next())
     {   //On calcule les coordonnées par rapport à chaque sommet de la cage
         c = computeMVC(pt, d, cage, position);
-        CGoGNout << c << CGoGNendl;
         coordinates[vertex].push_back(c);
         sumMVC += c;
         ++j;
