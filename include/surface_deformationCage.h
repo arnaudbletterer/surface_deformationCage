@@ -33,7 +33,17 @@ struct MapParameters
     bool m_initialized;
     bool m_linked;
     bool m_toComputeMVC;
-    std::vector<PFP2::VEC3> m_coordinates;
+};
+
+struct CageParameters
+{
+    VertexAttribute<PFP2::VEC3> cagePosition;
+    MapHandlerGen* controlledObject;
+    VertexAttribute<PFP2::VEC3> controlledObjectPosition;
+
+    Eigen::MatrixXf coordinatesEigen;
+    Eigen::Matrix<float, Eigen::Dynamic, 3> cagePositionEigen;
+    Eigen::Matrix<float, Eigen::Dynamic, 3> objectPositionEigen;
 };
 
 class Surface_DeformationCage_Plugin : public PluginProcessing
@@ -63,9 +73,9 @@ private slots:
     void openDeformationCageDialog();
 
     void computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
-    void computePointMVCFromCage(PFP2::VEC3 pt, Dart vertex, const QString& objectName, const QString& cageName,
-                                 VertexAttribute<PFP_STANDARD::VEC3> position, VertexAttribute<MVCCoordinates> coordinates);
-    PFP2::REAL computeMVC(PFP2::VEC3 pt, Dart vertex, PFP2::MAP* object, VertexAttribute<PFP_STANDARD::VEC3> position);
+    void computePointMVCFromCage(const PFP2::VEC3& pt, PFP2::MAP* cage, unsigned int cageNbV,
+                                 const Eigen::Matrix<float, Eigen::Dynamic, 3>& position, Eigen::VectorXf& coordinates);
+    PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* object, const VertexAttribute<PFP_STANDARD::VEC3>& position);
 
 public slots:
 
@@ -75,6 +85,7 @@ private:
 
 public:
     QHash<QString, MapParameters> h_parameterSet;
+    QHash<MapHandlerGen*, CageParameters> h_cageParameters;
 };
 
 } // namespace SCHNApps
