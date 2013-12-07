@@ -72,15 +72,38 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
             //Si la carte venant d'être modifiée est une cage
             CageParameters& p = h_cageParameters[mhg_modified];
             if(p.cagePosition.name()==nameAttr.toStdString())
-            {
-                //Si l'attribut venant d'être modifié est celui qui avait été utilisé lors de la liaison avec l'objet
-                for(unsigned int i = 0; i<p.objectPositionEigen.rows(); ++i)
+            {   //Si l'attribut venant d'être modifié est celui qui avait été utilisé lors de la liaison avec l'objet
+
+                int i = 0;
+                MapHandler<PFP2>* mh_cage = static_cast<MapHandler<PFP2>*>(mhg_modified);
+                PFP2::MAP* cage = mh_cage->getMap();
+
+                TraversorV<PFP2::MAP> trav_vert_cage(*cage);
+                for(Dart d = trav_vert_cage.begin(); d!=trav_vert_cage.end(); d= trav_vert_cage.next())
                 {
-                    p.objectPositionEigen = p.coordinatesEigen*p.cagePositionEigen;
-                    p.controlledObjectPosition[i][0] = p.objectPositionEigen(i, 0);
-                    p.controlledObjectPosition[i][1] = p.objectPositionEigen(i, 1);
-                    p.controlledObjectPosition[i][2] = p.objectPositionEigen(i, 2);
+                    p.cagePositionEigen(i, 0) = p.cagePosition[d][0];
+                    p.cagePositionEigen(i, 1) = p.cagePosition[d][1];
+                    p.cagePositionEigen(i, 2) = p.cagePosition[d][2];
+                    ++i;
                 }
+
+                p.objectPositionEigen = p.coordinatesEigen*p.cagePositionEigen;
+                MapHandler<PFP2>* mh_object = static_cast<MapHandler<PFP2>*>(p.controlledObject);
+                PFP2::MAP* object = mh_object->getMap();
+
+                i = 0;
+                TraversorV<PFP2::MAP> trav_vert_object(*object);
+                for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d= trav_vert_object.next())
+                {
+                    p.controlledObjectPosition[d][0] = p.objectPositionEigen(i, 0);
+                    p.controlledObjectPosition[d][1] = p.objectPositionEigen(i, 1);
+                    p.controlledObjectPosition[d][2] = p.objectPositionEigen(i, 2);
+                    ++i;
+                }
+
+                mh_object->updateBB(p.controlledObjectPosition);
+                mh_object->notifyAttributeModification(p.controlledObjectPosition);
+                mh_object->notifyConnectivityModification();
             }
         }
     }
@@ -167,11 +190,14 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 
         unsigned int objectNbV = object->getNbOrbits<VERTEX>();
 
-        p.coordinatesEigen.resize(cageNbV, objectNbV);
+        p.coordinatesEigen.resize(objectNbV, cageNbV);
+        p.cagePositionEigen.resize(cageNbV,3);
+        p.objectPositionEigen.resize(objectNbV,3);
 
         int i = 0;
         TraversorV<PFP2::MAP> trav_vert_cage(*cage);
-        for(Dart d = trav_vert_cage.begin(); d != trav_vert_cage.end(); d = trav_vert_cage.next()) {
+        for(Dart d = trav_vert_cage.begin(); d != trav_vert_cage.end(); d = trav_vert_cage.next())
+        {
             p.cagePositionEigen(i, 0) = positionCage[d][0];
             p.cagePositionEigen(i, 1) = positionCage[d][1];
             p.cagePositionEigen(i, 2) = positionCage[d][2];
@@ -182,9 +208,9 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
         TraversorV<PFP2::MAP> trav_vert_object(*object);
         for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d = trav_vert_object.next())
         {
-            p.objectPositionEigen(i, 0) = positionObject[i][0];
-            p.objectPositionEigen(i, 1) = positionObject[i][1];
-            p.objectPositionEigen(i, 2) = positionObject[i][2];
+            p.objectPositionEigen(i, 0) = positionObject[d][0];
+            p.objectPositionEigen(i, 1) = positionObject[d][1];
+            p.objectPositionEigen(i, 2) = positionObject[d][2];
             computePointMVCFromCage(positionObject[d], cage, cageNbV, positionCage, p.coordinatesEigen, i);
             ++i;
         }
@@ -202,11 +228,15 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
     PFP2::REAL c;
     PFP2::REAL sumMVC(0);
 
-    for(unsigned int i=0; i<cageNbV; ++i)
-    {   //On calcule les coordonnées par rapport à chaque sommet de la cage
-        c = computeMVC(pt, Dart(i), cage, position);
+    int i = 0;
+    TraversorV<PFP2::MAP> trav_vert_cage(*cage);
+    for(Dart d = trav_vert_cage.begin(); d != trav_vert_cage.end(); d = trav_vert_cage.next())
+    {
+        //On calcule les coordonnées par rapport à chaque sommet de la cage
+        c = computeMVC(pt, d, cage, position);
         coordinates(index, i) = c;
         sumMVC += c;
+        ++i;
     }
 
     for(unsigned int i=0; i<cageNbV; ++i)
@@ -223,7 +253,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart
     Dart it = vertex;
     do
     {
-        PFP2::VEC3 vi = position[it.label()];
+        PFP2::VEC3 vi = position[it];
         PFP2::VEC3 vj = position[cage->phi1(it)];
         PFP2::VEC3 vk = position[cage->phi_1(it)];
 
