@@ -1,5 +1,4 @@
 #include "dialog_deformationCage.h"
-
 #include "surface_deformationCage.h"
 #include "schnapps.h"
 
@@ -36,25 +35,39 @@ Dialog_DeformationCage::Dialog_DeformationCage(SCHNApps* s, Surface_DeformationC
 
 void Dialog_DeformationCage::updateAppearanceFromPlugin()
 {
-//    if(m_selectedObject && m_selectedCage) {
-//        MapParameters& p = m_plugin->h_parameterSet[
-//                m_selectedObject->getName()
-//                + combo_objectPositionAttribute->currentText()
-//                + m_selectedCage->getName()
-//                + combo_cagePositionAttribute->currentText()];
-//        if(p.m_initialized) {
-//            radio_linked->setChecked(p.m_linked);
-//        }
-//        else {
-//            radio_unlinked->setChecked(true);
-//        }
-//        group_linkState->setEnabled(true);
-//    }
-//    else {
-//        group_linkState->setEnabled(false);
-//    }
-//    combo_objectPositionAttribute->setEnabled(m_selectedObject);
-//    combo_cagePositionAttribute->setEnabled(m_selectedCage);
+    if(m_selectedObject && m_selectedCage)
+    {
+        if(m_plugin->h_cageParameters.contains(m_selectedCage))
+        {
+            CageParameters& p = m_plugin->h_cageParameters[m_selectedCage];
+            if(p.controlledObject==m_selectedObject)
+            {
+                group_linkState->setEnabled(true);
+                button_linkState->setText(QString("Unlink"));
+                progress_link->setValue(100);
+            }
+            else
+            {
+                group_linkState->setEnabled(false);
+                button_linkState->setText(QString("Link"));
+                progress_link->setValue(0);
+            }
+        }
+        else
+        {
+            group_linkState->setEnabled(true);
+            button_linkState->setText(QString("Link"));
+            progress_link->setValue(0);
+        }
+    }
+    else
+    {
+        button_linkState->setText(QString("Link"));
+        group_linkState->setEnabled(false);
+        progress_link->setValue(0);
+    }
+    combo_objectPositionAttribute->setEnabled(m_selectedObject);
+    combo_cagePositionAttribute->setEnabled(m_selectedCage);
 }
 
 void Dialog_DeformationCage::addMapToLists(MapHandlerGen* m)
@@ -143,6 +156,12 @@ void Dialog_DeformationCage::selectedObjectChanged()
 
         m_selectedObject = mh;
         connect(m_selectedObject, SIGNAL(attributeAdded(unsigned int, const QString&)), this, SLOT(addAttributeToObjectList(unsigned int, const QString&)));
+
+        if(m_selectedCage)
+        {
+            updateAppearanceFromPlugin();
+        }
+
     }
     else
         m_selectedObject = NULL;
@@ -178,6 +197,11 @@ void Dialog_DeformationCage::selectedCageChanged()
 
         m_selectedCage = mh;
         connect(m_selectedCage, SIGNAL(attributeAdded(unsigned int, const QString&)), this, SLOT(addAttributeToCageList(unsigned int, const QString&)));
+
+        if(m_selectedObject)
+        {
+            updateAppearanceFromPlugin();
+        }
     }
     else
         m_selectedCage = NULL;
@@ -193,14 +217,13 @@ MapHandlerGen* Dialog_DeformationCage::getSelectedCage()
     return m_selectedCage;
 }
 
-void Dialog_DeformationCage::linkStateToggled(bool b) {
+void Dialog_DeformationCage::linkStateClicked() {
     if(m_selectedObject && m_selectedCage)
     {
         if(!m_plugin->h_cageParameters.contains(m_selectedCage))
         {
             //S'il n'existait pas déjà un objet associé à la cage courante
             m_plugin->computeMVCFromDialog();
-            button_linkState->setText(QString("Unlink"));
         }
         else
         {
@@ -213,6 +236,7 @@ void Dialog_DeformationCage::linkStateToggled(bool b) {
                 m_plugin->h_cageParameters.remove(m_selectedCage);
             }
         }
+        updateAppearanceFromPlugin();
     }
 }
 

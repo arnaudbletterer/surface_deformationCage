@@ -42,7 +42,7 @@ public slots:
     void selectedObjectChanged();
     void selectedCageChanged();
 
-    void linkStateToggled(bool b);
+    void linkStateClicked();
 
     MapHandlerGen* getSelectedObject();
     MapHandlerGen* getSelectedCage();

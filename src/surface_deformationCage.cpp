@@ -180,12 +180,16 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 
         i = 0;
         TraversorV<PFP2::MAP> trav_vert_object(*object);
+        float incr = 100/objectNbV;
+        float total = 0.;
         for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d = trav_vert_object.next())
         {
             p.objectPositionEigen(i, 0) = positionObject[d][0];
             p.objectPositionEigen(i, 1) = positionObject[d][1];
             p.objectPositionEigen(i, 2) = positionObject[d][2];
             computePointMVCFromCage(positionObject[d], cage, cageNbV, positionCage, p.coordinatesEigen, i);
+            total += incr;
+            m_deformationCageDialog->progress_link->setValue(m_deformationCageDialog->progress_link->value()+(int)total);
             ++i;
         }
 
