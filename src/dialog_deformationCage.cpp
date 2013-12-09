@@ -23,7 +23,7 @@ Dialog_DeformationCage::Dialog_DeformationCage(SCHNApps* s, Surface_DeformationC
     connect(list_objects, SIGNAL(itemSelectionChanged()), this, SLOT(selectedObjectChanged()));
     connect(list_cages, SIGNAL(itemSelectionChanged()), this, SLOT(selectedCageChanged()));
 
-    connect(radio_linked, SIGNAL(toggled(bool)), this, SLOT(linkStateToggled(bool)));
+    connect(button_linkState, SIGNAL(clicked()), this, SLOT(linkStateClicked()));
 
     foreach(MapHandlerGen* map,  m_schnapps->getMapSet().values())
     {
@@ -196,13 +196,23 @@ MapHandlerGen* Dialog_DeformationCage::getSelectedCage()
 void Dialog_DeformationCage::linkStateToggled(bool b) {
     if(m_selectedObject && m_selectedCage)
     {
-        MapParameters& p = m_plugin->h_parameterSet[
-                m_selectedObject->getName()
-                + combo_objectPositionAttribute->currentText()
-                + m_selectedCage->getName()
-                + combo_cagePositionAttribute->currentText()];
-        m_plugin->computeMVCFromDialog();
-        p.m_linked = true;
+        if(!m_plugin->h_cageParameters.contains(m_selectedCage))
+        {
+            //S'il n'existait pas déjà un objet associé à la cage courante
+            m_plugin->computeMVCFromDialog();
+            button_linkState->setText(QString("Unlink"));
+        }
+        else
+        {
+            CageParameters p = m_plugin->h_cageParameters[m_selectedCage];
+            if(p.controlledObject==m_selectedObject
+                    && p.cagePosition.name()==combo_cagePositionAttribute->currentText().toStdString()
+                    && p.controlledObjectPosition.name()==combo_objectPositionAttribute->currentText().toStdString())
+            {
+                //Si les deux éléments étaient actuellement liés, on les délie
+                m_plugin->h_cageParameters.remove(m_selectedCage);
+            }
+        }
     }
 }
 
