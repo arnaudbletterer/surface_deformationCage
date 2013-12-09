@@ -127,6 +127,11 @@ void Surface_DeformationCage_Plugin::computeMVCFromDialog()
     }
 }
 
+void setProgressBarValue(int value, QProgressBar* progress)
+{
+    progress->setValue(value);
+}
+
 void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr)
 {
     if(!h_cageParameters.contains(m_schnapps->getMap(cageName))) {
@@ -182,14 +187,18 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
         TraversorV<PFP2::MAP> trav_vert_object(*object);
         float incr = 100/objectNbV;
         float total = 0.;
+
+        QFuture<void> future = QtConcurrent::run(setProgressBarValue, m_deformationCageDialog->progress_link->value()+(int)total, m_deformationCageDialog->progress_link);
+
         for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d = trav_vert_object.next())
         {
             p.objectPositionEigen(i, 0) = positionObject[d][0];
             p.objectPositionEigen(i, 1) = positionObject[d][1];
             p.objectPositionEigen(i, 2) = positionObject[d][2];
             computePointMVCFromCage(positionObject[d], cage, cageNbV, positionCage, p.coordinatesEigen, i);
-            total += incr;
             m_deformationCageDialog->progress_link->setValue(m_deformationCageDialog->progress_link->value()+(int)total);
+            m_deformationCageDialog->update();
+            total += incr;
             ++i;
         }
 
@@ -234,6 +243,8 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart
         PFP2::VEC3 vi = position[it];
         PFP2::VEC3 vj = position[cage->phi1(it)];
         PFP2::VEC3 vk = position[cage->phi_1(it)];
+
+        std::vector<PFP2::VEC3> tmp(2);
 
         PFP2::REAL Bjk = Geom::angle((vj-pt),(vk-pt));
         PFP2::REAL Bij = Geom::angle((vi-pt),(vj-pt));

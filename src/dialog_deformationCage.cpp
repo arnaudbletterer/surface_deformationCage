@@ -217,7 +217,8 @@ MapHandlerGen* Dialog_DeformationCage::getSelectedCage()
     return m_selectedCage;
 }
 
-void Dialog_DeformationCage::linkStateClicked() {
+void Dialog_DeformationCage::linkStateClicked()
+{
     if(m_selectedObject && m_selectedCage)
     {
         if(!m_plugin->h_cageParameters.contains(m_selectedCage))

@@ -16,6 +16,8 @@
 
 #include "MVCCoordinates.h"
 
+#include "Qt/qtconcurrentrun.h"
+
 namespace CGoGN
 {
 
