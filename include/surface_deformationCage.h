@@ -68,7 +68,6 @@ private slots:
 	void mapRemoved(MapHandlerGen* map);
 
     void attributeModified(unsigned int orbit, QString nameAttr);
-    void moveObjectsPointsFromCageMovement(MapHandlerGen* o, MapHandlerGen* c, const QString& objectNameAttr, const QString& cageNameAttr);
 
     void openDeformationCageDialog();
 

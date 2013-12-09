@@ -109,32 +109,6 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
     }
 }
 
-void Surface_DeformationCage_Plugin::moveObjectsPointsFromCageMovement(MapHandlerGen* o, MapHandlerGen* c, const QString& objectNameAttr, const QString& cageNameAttr)
-{
-    MapHandler<PFP2>* mh_object = static_cast<MapHandler<PFP2>*>(o);
-    PFP2::MAP* object = mh_object->getMap();
-    MapHandler<PFP2>* mh_cage = static_cast<MapHandler<PFP2>*>(c);
-    PFP2::MAP* cage = mh_cage->getMap();
-
-    VertexAttribute<PFP2::VEC3> objectPosition = object->getAttribute<PFP2::VEC3, VERTEX>(objectNameAttr.toStdString());
-    VertexAttribute<MVCCoordinates> objectCoordinates = object->getAttribute<MVCCoordinates, VERTEX>("MVCCoordinates");
-
-    VertexAttribute<PFP2::VEC3> cagePosition = cage->getAttribute<PFP2::VEC3, VERTEX>(cageNameAttr.toStdString());
-
-    TraversorV<PFP2::MAP> trav_vert_object(*object);
-    for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d = trav_vert_object.next())
-    {   //Pour chaque sommet de l'objet
-        objectPosition[d] = PFP2::VEC3(0);
-        TraversorV<PFP2::MAP> trav_vert_cage(*cage);
-        unsigned int j = 0;
-        for(Dart dd = trav_vert_cage.begin(); dd!=trav_vert_cage.end(); dd = trav_vert_cage.next())
-        {
-            objectPosition[d] += cagePosition[dd]*objectCoordinates[d][j];
-            ++j;
-        }
-    }
-}
-
 void Surface_DeformationCage_Plugin::openDeformationCageDialog()
 {
     m_deformationCageDialog->updateAppearanceFromPlugin();
