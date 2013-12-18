@@ -65,7 +65,8 @@ void Surface_DeformationCage_Plugin::mapRemoved(MapHandlerGen *map)
 
 void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QString nameAttr)
 {
-    if(orbit==VERTEX) {
+    if(orbit==VERTEX)
+    {
         MapHandlerGen* mhg_modified = static_cast<MapHandlerGen*>(QObject::sender());
         if(h_cageParameters.contains(mhg_modified))
         {
@@ -87,9 +88,10 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                     ++i;
                 }
 
-                p.objectPositionEigen = p.coordinatesEigen*p.cagePositionEigen;
                 MapHandler<PFP2>* mh_object = static_cast<MapHandler<PFP2>*>(p.controlledObject);
                 PFP2::MAP* object = mh_object->getMap();
+
+                p.objectPositionEigen = p.coordinatesEigen*p.cagePositionEigen;
 
                 i = 0;
                 TraversorV<PFP2::MAP> trav_vert_object(*object);
@@ -134,9 +136,8 @@ void setProgressBarValue(int value, QProgressBar* progress)
 
 void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr)
 {
-    if(!h_cageParameters.contains(m_schnapps->getMap(cageName))) {
-        //Si la carte n'est pas encore liée à un objet
-
+    if(!h_cageParameters.contains(m_schnapps->getMap(cageName)))
+    {   //Si la carte n'est pas encore liée à un objet
         CageParameters& p = h_cageParameters[m_schnapps->getMap(cageName)];
         MapHandler<PFP2>* mh_object = static_cast<MapHandler<PFP2>*>(m_schnapps->getMap(objectName));
         PFP2::MAP* object = mh_object->getMap();
