@@ -188,8 +188,6 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
         float incr = 100/objectNbV;
         float total = 0.;
 
-        QFuture<void> future = QtConcurrent::run(setProgressBarValue, m_deformationCageDialog->progress_link->value()+(int)total, m_deformationCageDialog->progress_link);
-
         for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d = trav_vert_object.next())
         {
             p.objectPositionEigen(i, 0) = positionObject[d][0];
