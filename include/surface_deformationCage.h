@@ -16,7 +16,7 @@
 
 #include "MVCCoordinates.h"
 
-#include "Qt/qtconcurrentrun.h"
+#include "Algo/Modelisation/voxellisation.h"
 
 namespace CGoGN
 {
@@ -73,12 +73,14 @@ private slots:
 
     void openDeformationCageDialog();
 
-    void computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
     void computePointMVCFromCage(const PFP2::VEC3& pt, PFP2::MAP* cage, unsigned int cageNbV,
                                  const VertexAttribute<PFP_STANDARD::VEC3>& position, Eigen::MatrixXf& coordinates, int index);
+    bool isInCage(const PFP2::VEC3& min, const PFP2::VEC3& max, const PFP2::VEC3& pt);
     PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& position);
+    PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& position);
 
 public slots:
+    void computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
 
 private:
     Dialog_DeformationCage* m_deformationCageDialog;
