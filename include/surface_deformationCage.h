@@ -18,6 +18,8 @@
 
 #include "Algo/Modelisation/voxellisation.h"
 
+#include "idCage.h"
+
 namespace CGoGN
 {
 
@@ -46,6 +48,9 @@ struct CageParameters
     Eigen::MatrixXf coordinatesEigen;
     Eigen::Matrix<float, Eigen::Dynamic, 3> cagePositionEigen;
     Eigen::Matrix<float, Eigen::Dynamic, 3> objectPositionEigen;
+
+    PFP2::VEC3 min;
+    PFP2::VEC3 max;
 };
 
 class Surface_DeformationCage_Plugin : public PluginProcessing

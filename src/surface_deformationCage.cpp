@@ -73,7 +73,6 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
             CageParameters& p = h_cageParameters[mhg_modified];
             if(p.cagePosition.name()==nameAttr.toStdString())
             {   //Si l'attribut venant d'être modifié est celui qui avait été utilisé lors de la liaison avec l'objet
-
                 int i = 0;
                 MapHandler<PFP2>* mh_cage = static_cast<MapHandler<PFP2>*>(mhg_modified);
                 PFP2::MAP* cage = mh_cage->getMap();
@@ -192,11 +191,6 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             ++i;
         }
 
-        i = 0;
-        TraversorV<PFP2::MAP> trav_vert_object(*object);
-        float incr = 100/objectNbV;
-        float total = 0.;
-
         Geom::BoundingBox<PFP2::VEC3> bb = Algo::Geometry::computeBoundingBox<PFP2>(*cage, positionCage);
 
         PFP2::VEC3 min = bb.min();
@@ -204,12 +198,15 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 
         Algo::Surface::Modelisation::swapVectorMax(min, max);
 
+        i = 0;
+        TraversorV<PFP2::MAP> trav_vert_object(*object);
+        float incr = 100/objectNbV;
+        float total = 0.;
+
         for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d = trav_vert_object.next())
         {
             if(isInCage(min, max, positionObject[d]))
             {
-                //Troisième coordonnée sur le plan de la cage
-                positionObject[d][2] = max[2];
                 p.objectPositionEigen(i, 0) = positionObject[d][0];
                 p.objectPositionEigen(i, 1) = positionObject[d][1];
                 p.objectPositionEigen(i, 2) = positionObject[d][2];
@@ -250,10 +247,11 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
     }
 }
 
+//Pré-requis : min <= max
 bool Surface_DeformationCage_Plugin::isInCage(const PFP2::VEC3& min, const PFP2::VEC3& max, const PFP2::VEC3& pt)
 {
-    return min[0] <= pt[0] && min[1] <= pt[1]
-            && max[0] >= pt[0] && max[1] >= pt[1];
+    return min[0] < pt[0] && min[1] < pt[1]
+            && max[0] > pt[0] && max[1] > pt[1];
 }
 
 PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& position)
@@ -303,8 +301,8 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     PFP2::VEC3 vj = position[cage->phi1(vertex)];
     PFP2::VEC3 vk = position[cage->phi_1(vertex)];
 
-    PFP2::REAL Bij = Geom::angle((vi-pt),(vj-pt));
-    PFP2::REAL Bki = Geom::angle((vk-pt),(vi-pt));
+    PFP2::REAL Bij = Geom::angle((vi-pt), (vj-pt));
+    PFP2::REAL Bki = Geom::angle((vk-pt), (vi-pt));
 
     res = (tan(Bki/2) + tan(Bij/2)) / ((vi-pt).norm());
 
