@@ -90,12 +90,6 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                 MapHandler<PFP2>* mh_object = static_cast<MapHandler<PFP2>*>(p.controlledObject);
                 PFP2::MAP* object = mh_object->getMap();
 
-                Geom::BoundingBox<PFP2::VEC3> bb = Algo::Geometry::computeBoundingBox<PFP2>(*cage, p.cagePosition);
-                PFP2::VEC3 min = bb.min();
-                PFP2::VEC3 max = bb.max();
-
-                Algo::Surface::Modelisation::swapVectorMax(min, max);
-
                 i = 0;
                 TraversorV<PFP2::MAP> trav_vert_object(*object);
                 for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d= trav_vert_object.next())
@@ -188,12 +182,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             ++i;
         }
 
-        Geom::BoundingBox<PFP2::VEC3> bb = Algo::Geometry::computeBoundingBox<PFP2>(*cage, positionCage);
-
-        PFP2::VEC3 min = bb.min();
-        PFP2::VEC3 max = bb.max();
-
-        Algo::Surface::Modelisation::swapVectorMax(min, max);
+        VertexAttribute<VCage> vCageObject = object->getAttribute<VCage, VERTEX>("VCage");
 
         i = 0;
         TraversorV<PFP2::MAP> trav_vert_object(*object);
@@ -202,11 +191,10 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 
         for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d = trav_vert_object.next())
         {
-            //IS IN CAGE
             p.objectPositionEigen(i, 0) = positionObject[d][0];
             p.objectPositionEigen(i, 1) = positionObject[d][1];
             p.objectPositionEigen(i, 2) = positionObject[d][2];
-            computePointMVCFromCage(positionObject[d], cage, cageNbV, positionCage, p.coordinatesEigen, i);
+            computePointMVCFromCage(d, positionObject, positionCage, p.coordinatesEigen, i, vCageObject[d].getCage(), cage);
             m_deformationCageDialog->progress_link->setValue(m_deformationCageDialog->progress_link->value()+(int)total);
             m_deformationCageDialog->update();
             total += incr;
@@ -220,64 +208,39 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 /*
   * Fonction qui calcule les coordonnées MVC d'un point par rapport à une cage
   */
-    void Surface_DeformationCage_Plugin::computePointMVCFromCage(const PFP2::VEC3& pt, PFP2::MAP* cage, unsigned int cageNbV,
-                                                                 const VertexAttribute<PFP2::VEC3>& position, Eigen::MatrixXf& coordinates, int index)
+    void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
+                                                                 const VertexAttribute<PFP2::VEC3>& positionCage, Eigen::MatrixXf& coordinates, int index,
+                                                                 const std::vector<Dart>& vCage, PFP2::MAP* cage)
 {
-    PFP2::REAL c;
-    PFP2::REAL sumMVC(0);
-
+    PFP2::REAL c, sumMVC(0);
     int i = 0;
-    TraversorV<PFP2::MAP> trav_vert_cage(*cage);
-    for(Dart d = trav_vert_cage.begin(); d != trav_vert_cage.end(); d = trav_vert_cage.next())
+
+    for(std::vector<Dart>::const_iterator d = vCage.begin(); d != vCage.end(); ++d)
     {
-        c = computeMVC2D(pt, d, cage, position);
+        c = computeMVC2D(positionObject[vertex], *d, cage, positionCage);
         coordinates(index, i) = c;
         sumMVC += c;
         ++i;
     }
 
-    for(unsigned int i=0; i<cageNbV; ++i)
+    while(i>0)
     {
+        --i;
         coordinates(index, i) /= sumMVC;
     }
 }
 
-//Pré-requis : min <= max
-int Surface_DeformationCage_Plugin::isInCage(PFP2::MAP* object, PFP2::MAP* cage, Dart vertex)
+PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& positionCage)
 {
-    int res = -1;
-
-    VertexAttribute<VCage> vCageObject = object->getAttribute<VCage, VERTEX>("VCage");
-    VertexAttribute<VCage> vCageCage = cage->getAttribute<VCage, VERTEX>("VCage");
-    if(!vCageCage.isValid())
-    {
-        CGoGNout << "Cage mal initialisée" << CGoGNendl;
-        exit -1;
-    }
-    if(!vCageObject.isValid())
-    {
-        vCageObject = object->addAttribute<VCage, VERTEX>("VCage");
-        TraversorV<PFP2::MAP> trav_vert_cage(*cage);
-        for(Dart d = trav_vert_cage.begin(); d!=trav_vert_cage.end(); d = trav_vert_cage.next())
-        {
-
-        }
-    }
-
-    return res;
-}
-
-PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& position)
-{
-    PFP2::REAL r = (position[vertex]-pt).norm();
+    PFP2::REAL r = (positionCage[vertex]-pt).norm();
 
     PFP2::REAL sumU(0.);
     Dart it = vertex;
     do
     {
-        PFP2::VEC3 vi = position[it];
-        PFP2::VEC3 vj = position[cage->phi1(it)];
-        PFP2::VEC3 vk = position[cage->phi_1(it)];
+        PFP2::VEC3 vi = positionCage[it];
+        PFP2::VEC3 vj = positionCage[cage->phi1(it)];
+        PFP2::VEC3 vk = positionCage[cage->phi_1(it)];
 
         PFP2::REAL Bjk = Geom::angle((vj-pt),(vk-pt));
         PFP2::REAL Bij = Geom::angle((vi-pt),(vj-pt));
@@ -306,13 +269,13 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart
     return (1.0f/r)*sumU;
 }
 
-PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& position)
+PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& positionCage)
 {
     PFP2::REAL res;
 
-    PFP2::VEC3 vi = position[vertex];
-    PFP2::VEC3 vj = position[cage->phi1(vertex)];
-    PFP2::VEC3 vk = position[cage->phi_1(vertex)];
+    PFP2::VEC3 vi = positionCage[vertex];
+    PFP2::VEC3 vj = positionCage[cage->phi1(vertex)];
+    PFP2::VEC3 vk = positionCage[cage->phi_1(vertex)];
 
     PFP2::REAL Bij = Geom::angle((vi-pt), (vj-pt));
     PFP2::REAL Bki = Geom::angle((vk-pt), (vi-pt));

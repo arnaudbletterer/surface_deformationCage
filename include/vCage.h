@@ -17,63 +17,37 @@ namespace SCHNApps
 class VCage {
    public:
     VCage(int i=0)
-        :   m_cages(1), m_idCages(1)
+        :   m_cage()
         {}
 
-    void addVertex(Dart vertex, unsigned int index)
+    void addVertex(Dart vertex)
     {
-        if(m_cages.size()>index)
+        if(std::find(m_cage.begin(), m_cage.end(), vertex) != m_cage.end())
         {
-            m_cages[index].push_back(vertex);
+            m_cage.push_back(vertex);
         }
     }
 
-    void addNewCage()
+    Dart operator[](unsigned int index)
     {
-        m_cages.push_back(std::vector<Dart>());
-    }
-
-    std::vector<Dart> getCage(unsigned int index)
-    {
-        if(m_cages.size()>index)
+        if(index<m_cage.size())
         {
-            return m_cages[index];
+            return m_cage[index];
         }
-        return std::vector<Dart>();
     }
 
-    std::vector<int> getIds()
+    std::vector<Dart> getCage()
     {
-        return m_idCages;
-    }
-
-    void addId(int id)
-    {
-        m_idCages.push_back(id);
-    }
-
-    int size()
-    {
-        return m_cages.size();
-    }
-
-    int sizeOfCage(unsigned int index)
-    {
-        if(m_cages.size()>index)
-        {
-            return m_cages[index].size();
-        }
-        return -1;
+        return m_cage;
     }
 
     static std::string CGoGNnameOfType()
     {
-        return "VCages";
+        return "VCage";
     }
 
     private:
-        std::vector<std::vector<Dart> > m_cages;    //Vecteur de cages contenant le sommet
-        std::vector<int> m_idCages;  //Identifiant de la cage composée du sommet
+        std::vector<Dart> m_cage;
 };
 
 } //namespace SCHNApps

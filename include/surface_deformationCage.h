@@ -75,10 +75,10 @@ private slots:
 
     void openDeformationCageDialog();
 
-    void computePointMVCFromCage(const PFP2::VEC3& pt, PFP2::MAP* cage, unsigned int cageNbV,
-                                 const VertexAttribute<PFP_STANDARD::VEC3>& position, Eigen::MatrixXf& coordinates, int index);
-    int isInCage(PFP2::MAP* object, PFP2::MAP* cage, Dart vertex);
-    PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& position);
+    void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
+                                 const VertexAttribute<PFP2::VEC3>& positionCage, Eigen::MatrixXf& coordinates, int index,
+                                 const std::vector<Dart>& vCage, PFP2::MAP* cage);
+    PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& positionCage);
     PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& position);
 
 public slots:
