@@ -100,13 +100,10 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                 TraversorV<PFP2::MAP> trav_vert_object(*object);
                 for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d= trav_vert_object.next())
                 {
-                    if(isInCage(min, max, p.controlledObjectPosition[d]))
-                    {
-                        p.controlledObjectPosition[d][0] = p.objectPositionEigen(i, 0);
-                        p.controlledObjectPosition[d][1] = p.objectPositionEigen(i, 1);
-                        p.controlledObjectPosition[d][2] = p.objectPositionEigen(i, 2);
-                        ++i;
-                    }
+                    p.controlledObjectPosition[d][0] = p.objectPositionEigen(i, 0);
+                    p.controlledObjectPosition[d][1] = p.objectPositionEigen(i, 1);
+                    p.controlledObjectPosition[d][2] = p.objectPositionEigen(i, 2);
+                    ++i;
                 }
 
                 mh_object->updateBB(p.controlledObjectPosition);
@@ -205,17 +202,15 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 
         for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d = trav_vert_object.next())
         {
-            if(isInCage(min, max, positionObject[d]))
-            {
-                p.objectPositionEigen(i, 0) = positionObject[d][0];
-                p.objectPositionEigen(i, 1) = positionObject[d][1];
-                p.objectPositionEigen(i, 2) = positionObject[d][2];
-                computePointMVCFromCage(positionObject[d], cage, cageNbV, positionCage, p.coordinatesEigen, i);
-                m_deformationCageDialog->progress_link->setValue(m_deformationCageDialog->progress_link->value()+(int)total);
-                m_deformationCageDialog->update();
-                total += incr;
-                ++i;
-            }
+            //IS IN CAGE
+            p.objectPositionEigen(i, 0) = positionObject[d][0];
+            p.objectPositionEigen(i, 1) = positionObject[d][1];
+            p.objectPositionEigen(i, 2) = positionObject[d][2];
+            computePointMVCFromCage(positionObject[d], cage, cageNbV, positionCage, p.coordinatesEigen, i);
+            m_deformationCageDialog->progress_link->setValue(m_deformationCageDialog->progress_link->value()+(int)total);
+            m_deformationCageDialog->update();
+            total += incr;
+            ++i;
         }
 
         CGoGNout << "Temps de calcul des coordonnées MVC : " << chrono.elapsed() << " ms." << CGoGNendl;
@@ -248,10 +243,28 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 }
 
 //Pré-requis : min <= max
-bool Surface_DeformationCage_Plugin::isInCage(const PFP2::VEC3& min, const PFP2::VEC3& max, const PFP2::VEC3& pt)
+int Surface_DeformationCage_Plugin::isInCage(PFP2::MAP* object, PFP2::MAP* cage, Dart vertex)
 {
-    return min[0] < pt[0] && min[1] < pt[1]
-            && max[0] > pt[0] && max[1] > pt[1];
+    int res = -1;
+
+    VertexAttribute<VCage> vCageObject = object->getAttribute<VCage, VERTEX>("VCage");
+    VertexAttribute<VCage> vCageCage = cage->getAttribute<VCage, VERTEX>("VCage");
+    if(!vCageCage.isValid())
+    {
+        CGoGNout << "Cage mal initialisée" << CGoGNendl;
+        exit -1;
+    }
+    if(!vCageObject.isValid())
+    {
+        vCageObject = object->addAttribute<VCage, VERTEX>("VCage");
+        TraversorV<PFP2::MAP> trav_vert_cage(*cage);
+        for(Dart d = trav_vert_cage.begin(); d!=trav_vert_cage.end(); d = trav_vert_cage.next())
+        {
+
+        }
+    }
+
+    return res;
 }
 
 PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& position)

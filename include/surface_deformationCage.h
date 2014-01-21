@@ -18,7 +18,7 @@
 
 #include "Algo/Modelisation/voxellisation.h"
 
-#include "idCage.h"
+#include "vCage.h"
 
 namespace CGoGN
 {
@@ -48,9 +48,6 @@ struct CageParameters
     Eigen::MatrixXf coordinatesEigen;
     Eigen::Matrix<float, Eigen::Dynamic, 3> cagePositionEigen;
     Eigen::Matrix<float, Eigen::Dynamic, 3> objectPositionEigen;
-
-    PFP2::VEC3 min;
-    PFP2::VEC3 max;
 };
 
 class Surface_DeformationCage_Plugin : public PluginProcessing
@@ -80,7 +77,7 @@ private slots:
 
     void computePointMVCFromCage(const PFP2::VEC3& pt, PFP2::MAP* cage, unsigned int cageNbV,
                                  const VertexAttribute<PFP_STANDARD::VEC3>& position, Eigen::MatrixXf& coordinates, int index);
-    bool isInCage(const PFP2::VEC3& min, const PFP2::VEC3& max, const PFP2::VEC3& pt);
+    int isInCage(PFP2::MAP* object, PFP2::MAP* cage, Dart vertex);
     PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& position);
     PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& position);
 
