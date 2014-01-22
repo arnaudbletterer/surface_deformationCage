@@ -22,7 +22,7 @@ class VCage {
 
     void addVertex(Dart vertex)
     {
-        if(std::find(m_cage.begin(), m_cage.end(), vertex) != m_cage.end())
+        if(std::find(m_cage.begin(), m_cage.end(), vertex) == m_cage.end())
         {
             m_cage.push_back(vertex);
         }
