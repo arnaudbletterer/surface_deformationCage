@@ -28,6 +28,8 @@ namespace CGoGN
 namespace SCHNApps
 {
 
+#define M_H 0.6
+
 struct MapParameters
 {
     MapParameters();
@@ -50,6 +52,8 @@ struct CageParameters
     Eigen::MatrixXf coordinatesEigen;
     Eigen::Matrix<float, Eigen::Dynamic, 3> cagePositionEigen;
     Eigen::Matrix<float, Eigen::Dynamic, 3> objectPositionEigen;
+
+    Eigen::Matrix<Dart, Eigen::Dynamic, 1> dartObjectIndicesEigen;
 };
 
 class Surface_DeformationCage_Plugin : public PluginProcessing
@@ -78,13 +82,17 @@ private slots:
     void openDeformationCageDialog();
 
     void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
-                                 const VertexAttribute<PFP2::VEC3>& positionCage, Eigen::MatrixXf& coordinates, int index,
+                                 const VertexAttribute<PFP2::VEC3>& positionCage,
+                                 Eigen::MatrixXf& coordinates, int index,
                                  const std::vector<Dart>& vCage, PFP2::MAP* cage);
-    PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& positionCage);
-    PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& position);
+    PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
+                          const VertexAttribute<PFP2::VEC3>& positionCage);
+    PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
+                            const VertexAttribute<PFP2::VEC3>& position);
 
-    PFP2::REAL boundaryWeightFunction(const PFP2::VEC3& pt, const std::vector<PFP2::VEC3>& cage);
-    PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h);
+    PFP2::REAL boundaryWeightFunction(const Eigen::Matrix<Dart, Eigen::Dynamic, 1>& vCage, PFP2::MAP* cage,
+                                      const Eigen::MatrixXf& coordinatesEigen, int index);
+    PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
 
 public slots:
     void computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
