@@ -1,7 +1,7 @@
 #ifndef _SURFACE_DEFORMATIONCAGE_PLUGIN_H_
 #define _SURFACE_DEFORMATIONCAGE_PLUGIN_H_
 
-#include "plugin_processing.h"
+#include "plugin_interaction.h"
 
 #include <cmath>
 
@@ -56,7 +56,7 @@ struct CageParameters
     Eigen::Matrix<Dart, Eigen::Dynamic, 1> dartObjectIndicesEigen;
 };
 
-class Surface_DeformationCage_Plugin : public PluginProcessing
+class Surface_DeformationCage_Plugin : public PluginInteraction
 {
 	Q_OBJECT
 	Q_INTERFACES(CGoGN::SCHNApps::Plugin)
@@ -70,6 +70,19 @@ public:
 
 	virtual bool enable();
 	virtual void disable();
+
+    virtual void draw(View* view) {}
+    virtual void drawMap(View* view, MapHandlerGen* map);
+
+    virtual void keyPress(View* view, QKeyEvent* event) {}
+    virtual void keyRelease(View* view, QKeyEvent* event) {}
+    virtual void mousePress(View* view, QMouseEvent* event) {}
+    virtual void mouseRelease(View* view, QMouseEvent* event) {}
+    virtual void mouseMove(View* view, QMouseEvent* event) {}
+    virtual void wheelEvent(View* view, QWheelEvent* event) {}
+
+    virtual void viewLinked(View* view) {}
+    virtual void viewUnlinked(View* view) {}
 
     void computeMVCFromDialog();
 
@@ -91,7 +104,7 @@ private slots:
                             const VertexAttribute<PFP2::VEC3>& position);
 
     PFP2::REAL boundaryWeightFunction(const std::vector<Dart>& vCage, PFP2::MAP* cage,
-                                                            const Eigen::MatrixXf& coordinatesEigen, int index);
+                                      const Eigen::MatrixXf& coordinatesEigen, int index);
     PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
 
 public slots:

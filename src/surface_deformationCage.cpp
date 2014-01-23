@@ -64,6 +64,22 @@ void Surface_DeformationCage_Plugin::disable()
     disconnect(m_schnapps, SIGNAL(mapRemoved(MapHandlerGen*)), this, SLOT(mapRemoved(MapHandlerGen*)));
 }
 
+void Surface_DeformationCage_Plugin::drawMap(View *view, MapHandlerGen *map)
+{
+    if(m_toDraw)
+    {
+        //If VBO are initialized
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glEnable(GL_LIGHTING);
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        m_colorPerVertexShader->setAttributePosition(m_positionVBO);
+        m_colorPerVertexShader->setAttributeColor(m_colorVBO);
+        m_colorPerVertexShader->setOpacity(1.);
+        map->draw(m_colorPerVertexShader, CGoGN::Algo::Render::GL2::TRIANGLES);
+        glDisable(GL_POLYGON_OFFSET_FILL);
+    }
+}
+
 void Surface_DeformationCage_Plugin::mapAdded(MapHandlerGen *map)
 {
     connect(map, SIGNAL(attributeModified(unsigned int, QString)), this, SLOT(attributeModified(unsigned int, QString)));
@@ -216,19 +232,35 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
         CGoGNout << "Calcul de la fonction de poids .." << CGoGNflush;
 
         i = 0;
-        for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d = trav_vert_object.next())
+
+        VertexAttribute <PFP2::VEC4> colorObject = object->getAttribute<PFP2::VEC4, VERTEX>("color");
+        if(!colorObject.isValid())
         {
-            smoothingFunction(boundaryWeightFunction(vCage[d].getCage(), cage, p.coordinatesEigen, i++));
+            colorObject = object->addAttribute<PFP2::VEC4, VERTEX>("color");
+            mh_object->registerAttribute(colorObject);
         }
 
+        PFP2::REAL res;
+        for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d = trav_vert_object.next())
+        {
+            res = smoothingFunction(boundaryWeightFunction(vCage[d].getCage(), cage, p.coordinatesEigen, i++));
+            colorObject[d] = PFP2::VEC4(res*10, 0.f, 1-res*10, 1.f);
+        }
+
+        m_positionVBO->updateData(positionObject);
+        m_colorVBO->updateData(colorObject);
+        m_toDraw = true;
+
         CGoGNout << ".. fait" << CGoGNendl;
+
+        m_schnapps->getSelectedView()->updateGL();
     }
 }
 
 /*
   * Fonction qui calcule les coordonnées MVC d'un point par rapport à une cage
   */
-    void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
+void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                                                  const VertexAttribute<PFP2::VEC3>& positionCage, Eigen::MatrixXf& coordinates, int index,
                                                                  const std::vector<Dart>& vCage, PFP2::MAP* cage)
 {
@@ -316,12 +348,11 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
 PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const std::vector<Dart>& vCage, PFP2::MAP* cage,
                                                                   const Eigen::MatrixXf& coordinatesEigen, int index)
 {
-    PFP2::REAL res(0);
+    PFP2::REAL res(1);
 
     unsigned int i=0;
     PFP2::REAL sumCur(0);
     std::vector<Dart> boundaryVertices;
-    std::vector<Dart>::iterator it;
     TraversorV<PFP2::MAP> trav_vert_cage(*cage);
     DartMarker boundaryMarker(*cage);
 
@@ -342,29 +373,25 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const std::vec
     {
         //S'il existe des sommets appartenant à la bordure de la cage
         boundaryMarker.unmarkAll();
-        sumCur = 0;
 
         boundaryMarker.markOrbit<VERTEX>(boundaryVertices[0]);
         boundaryMarker.markOrbit<VERTEX>(boundaryVertices[1]);
 
+        sumCur = 0;
         i=0;
         for(Dart d = trav_vert_cage.begin(); d != trav_vert_cage.end(); d = trav_vert_cage.next())
         {
             if(boundaryMarker.isMarked(d))
             {
                 //S'il fait partie de la bordure actuellement traitée
-                if(coordinatesEigen(index, i)>FLT_EPSILON || coordinatesEigen(index, i)<-FLT_EPSILON)
-                {
-                    //Si la coordonnée n'est pas nulle
-                    sumCur += coordinatesEigen(index, i);
-                }
+                sumCur += coordinatesEigen(index, i);
                 if(cage->getEmbedding<VERTEX>(d)==cage->getEmbedding<VERTEX>(boundaryVertices[0]))
                 {
                     boundaryVertices.erase(boundaryVertices.begin());
                 }
                 else
                 {
-                    boundaryVertices.erase(++boundaryVertices.begin());
+                    boundaryVertices.erase(boundaryVertices.begin()+1);
                 }
                 boundaryMarker.unmarkOrbit<VERTEX>(d);
             }
@@ -376,15 +403,29 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const std::vec
     return res;
 }
 
+PFP2::REAL degreeToRadian(const PFP2::REAL& deg)
+{
+    return deg*M_PI/180.0;
+}
+
 PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h)
 {
-    if(h>FLT_EPSILON)
+    if(x<=h)
     {
-        return 1/2*sin(M_PI*(x/h-1/2));
+        if(h>FLT_EPSILON)
+        {
+            //return (1/2. * std::sin(degreeToRadian(M_PI*(x/h-1/2.))) + 1/2.);
+            return -2*(x/h)*(x/h)*(x/h) + 3*(x/h)*(x/h);
+            //return -8*(x/h)*(x/h)*(x/h)*(x/h)*(x/h) + 20*(x/h)*(x/h)*(x/h)*(x/h);
+        }
+        else
+        {
+            return 0.;
+        }
     }
     else
     {
-        return 0.;
+        return 1.;
     }
 }
 
