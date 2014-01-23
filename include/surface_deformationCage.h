@@ -1,7 +1,9 @@
 #ifndef _SURFACE_DEFORMATIONCAGE_PLUGIN_H_
 #define _SURFACE_DEFORMATIONCAGE_PLUGIN_H_
 
-#include "plugin_processing.h"
+#include "plugin_interaction.h"
+
+#include <cmath>
 
 #include "Algo/Modelisation/voxellisation.h"
 #include "Algo/Modelisation/triangulation.h"
@@ -16,13 +18,17 @@
 
 #include "MVCCoordinates.h"
 
-#include "Qt/qtconcurrentrun.h"
+#include "Algo/Modelisation/voxellisation.h"
+
+#include "vCage.h"
 
 namespace CGoGN
 {
 
 namespace SCHNApps
 {
+
+#define M_H 0.6
 
 struct MapParameters
 {
@@ -46,9 +52,11 @@ struct CageParameters
     Eigen::MatrixXf coordinatesEigen;
     Eigen::Matrix<float, Eigen::Dynamic, 3> cagePositionEigen;
     Eigen::Matrix<float, Eigen::Dynamic, 3> objectPositionEigen;
+
+    Eigen::Matrix<Dart, Eigen::Dynamic, 1> dartObjectIndicesEigen;
 };
 
-class Surface_DeformationCage_Plugin : public PluginProcessing
+class Surface_DeformationCage_Plugin : public PluginInteraction
 {
 	Q_OBJECT
 	Q_INTERFACES(CGoGN::SCHNApps::Plugin)
@@ -63,6 +71,19 @@ public:
 	virtual bool enable();
 	virtual void disable();
 
+    virtual void draw(View* view) {}
+    virtual void drawMap(View* view, MapHandlerGen* map);
+
+    virtual void keyPress(View* view, QKeyEvent* event) {}
+    virtual void keyRelease(View* view, QKeyEvent* event) {}
+    virtual void mousePress(View* view, QMouseEvent* event) {}
+    virtual void mouseRelease(View* view, QMouseEvent* event) {}
+    virtual void mouseMove(View* view, QMouseEvent* event) {}
+    virtual void wheelEvent(View* view, QWheelEvent* event) {}
+
+    virtual void viewLinked(View* view) {}
+    virtual void viewUnlinked(View* view) {}
+
     void computeMVCFromDialog();
 
 private slots:
@@ -73,12 +94,21 @@ private slots:
 
     void openDeformationCageDialog();
 
-    void computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
-    void computePointMVCFromCage(const PFP2::VEC3& pt, PFP2::MAP* cage, unsigned int cageNbV,
-                                 const VertexAttribute<PFP_STANDARD::VEC3>& position, Eigen::MatrixXf& coordinates, int index);
-    PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& position);
+    void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
+                                 const VertexAttribute<PFP2::VEC3>& positionCage,
+                                 Eigen::MatrixXf& coordinates, int index,
+                                 const std::vector<Dart>& vCage, PFP2::MAP* cage);
+    PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
+                          const VertexAttribute<PFP2::VEC3>& positionCage);
+    PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
+                            const VertexAttribute<PFP2::VEC3>& position);
+
+    PFP2::REAL boundaryWeightFunction(const std::vector<Dart>& vCage, PFP2::MAP* cage,
+                                      const Eigen::MatrixXf& coordinatesEigen, int index);
+    PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
 
 public slots:
+    void computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
 
 private:
     Dialog_DeformationCage* m_deformationCageDialog;
@@ -87,6 +117,13 @@ private:
 public:
     QHash<QString, MapParameters> h_parameterSet;
     QHash<MapHandlerGen*, CageParameters> h_cageParameters;
+
+protected:
+    CGoGN::Utils::ShaderColorPerVertex* m_colorPerVertexShader;
+    Utils::VBO* m_positionVBO;
+    Utils::VBO* m_colorVBO;
+
+    bool m_toDraw;
 };
 
 } // namespace SCHNApps
