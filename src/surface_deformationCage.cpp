@@ -34,6 +34,14 @@ bool Surface_DeformationCage_Plugin::enable()
 
     m_schnapps->addMenuAction(this, "Surface;Cage deformation", m_deformationCageAction);
 
+    m_colorPerVertexShader = new CGoGN::Utils::ShaderColorPerVertex();
+    registerShader(m_colorPerVertexShader);
+
+    m_positionVBO = new Utils::VBO();
+    m_colorVBO = new Utils::VBO();
+
+    m_toDraw = false;
+
     connect(m_deformationCageAction, SIGNAL(triggered()), this, SLOT(openDeformationCageDialog()));
 
     connect(m_schnapps, SIGNAL(mapAdded(MapHandlerGen*)), this, SLOT(mapAdded(MapHandlerGen*)));
@@ -47,6 +55,9 @@ bool Surface_DeformationCage_Plugin::enable()
 
 void Surface_DeformationCage_Plugin::disable()
 {
+    delete m_colorPerVertexShader;
+    delete m_positionVBO;
+    delete m_colorVBO;
     disconnect(m_deformationCageAction, SIGNAL(triggered()), this, SLOT(openGenerationCageDialog()));
 
     disconnect(m_schnapps, SIGNAL(mapAdded(MapHandlerGen*)), this, SLOT(mapAdded(MapHandlerGen*)));
@@ -204,9 +215,10 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 
         CGoGNout << "Calcul de la fonction de poids .." << CGoGNflush;
 
-        for(int i=0; i<p.objectPositionEigen.rows(); ++i)
+        i = 0;
+        for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d = trav_vert_object.next())
         {
-            smoothingFunction(boundaryWeightFunction(p.dartObjectIndicesEigen, cage, p.coordinatesEigen, i));
+            smoothingFunction(boundaryWeightFunction(vCage[d].getCage(), cage, p.coordinatesEigen, i++));
         }
 
         CGoGNout << ".. fait" << CGoGNendl;
@@ -301,7 +313,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
 }
 
 
-PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::Matrix<Dart, Eigen::Dynamic, 1>& vCage, PFP2::MAP* cage,
+PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const std::vector<Dart>& vCage, PFP2::MAP* cage,
                                                                   const Eigen::MatrixXf& coordinatesEigen, int index)
 {
     PFP2::REAL res(0);
@@ -314,11 +326,15 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::M
     DartMarker boundaryMarker(*cage);
 
     //On récupère les sommets bordure
-    for(i=0; i<vCage.rows(); ++i)
+    Dart d2;
+    for(i=0; i<vCage.size(); ++i)
     {
-        if(cage->phi2(vCage(i,0))!=vCage(i,0))
+        d2 = cage->phi2(vCage[i]);
+        if(d2 != vCage[i])
         {
-            boundaryVertices.push_back(vCage(i,0));
+            //Si la cage est collée à une autre cage le long de cette arête
+            boundaryVertices.push_back(vCage[i]);
+            boundaryVertices.push_back(d2);
         }
     }
 
@@ -328,23 +344,29 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::M
         boundaryMarker.unmarkAll();
         sumCur = 0;
 
-        boundaryMarker.markOrbit<FACE>(boundaryVertices.back());
+        boundaryMarker.markOrbit<VERTEX>(boundaryVertices[0]);
+        boundaryMarker.markOrbit<VERTEX>(boundaryVertices[1]);
 
         i=0;
         for(Dart d = trav_vert_cage.begin(); d != trav_vert_cage.end(); d = trav_vert_cage.next())
         {
-            if(coordinatesEigen(index, i)>FLT_EPSILON || coordinatesEigen(index, i)<-FLT_EPSILON )
+            if(boundaryMarker.isMarked(d))
             {
-                //Si la coordonnée n'est pas nulle
-                if((it = std::find(boundaryVertices.begin(), boundaryVertices.end(), d)) != boundaryVertices.end())
+                //S'il fait partie de la bordure actuellement traitée
+                if(coordinatesEigen(index, i)>FLT_EPSILON || coordinatesEigen(index, i)<-FLT_EPSILON)
                 {
-                    //Si le sommet courant appartient à la bordure de la cage
-                    if(boundaryMarker.isMarked(d))
-                    {
-                        sumCur += coordinatesEigen(index, i);
-                        boundaryVertices.erase(it);
-                    }
+                    //Si la coordonnée n'est pas nulle
+                    sumCur += coordinatesEigen(index, i);
                 }
+                if(cage->getEmbedding<VERTEX>(d)==cage->getEmbedding<VERTEX>(boundaryVertices[0]))
+                {
+                    boundaryVertices.erase(boundaryVertices.begin());
+                }
+                else
+                {
+                    boundaryVertices.erase(++boundaryVertices.begin());
+                }
+                boundaryMarker.unmarkOrbit<VERTEX>(d);
             }
             ++i;
         }

@@ -90,8 +90,8 @@ private slots:
     PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
                             const VertexAttribute<PFP2::VEC3>& position);
 
-    PFP2::REAL boundaryWeightFunction(const Eigen::Matrix<Dart, Eigen::Dynamic, 1>& vCage, PFP2::MAP* cage,
-                                      const Eigen::MatrixXf& coordinatesEigen, int index);
+    PFP2::REAL boundaryWeightFunction(const std::vector<Dart>& vCage, PFP2::MAP* cage,
+                                                            const Eigen::MatrixXf& coordinatesEigen, int index);
     PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
 
 public slots:
@@ -104,6 +104,13 @@ private:
 public:
     QHash<QString, MapParameters> h_parameterSet;
     QHash<MapHandlerGen*, CageParameters> h_cageParameters;
+
+protected:
+    CGoGN::Utils::ShaderColorPerVertex* m_colorPerVertexShader;
+    Utils::VBO* m_positionVBO;
+    Utils::VBO* m_colorVBO;
+
+    bool m_toDraw;
 };
 
 } // namespace SCHNApps
