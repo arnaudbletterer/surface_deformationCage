@@ -353,53 +353,71 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const std::vec
 
     unsigned int i=0;
     PFP2::REAL sumCur(0);
-    std::vector<Dart> boundaryVertices;
     TraversorV<PFP2::MAP> trav_vert_cage(*cage);
+    DartMarker cageMarker(*cage);
     DartMarker boundaryMarker(*cage);
+    int currentCage;
+    std::vector<int> cagesCalculated;
 
-    //On récupère les sommets bordure
+    //On marque les sommets de la cage
     Dart d2;
     for(i=0; i<vCage.size(); ++i)
     {
         d2 = cage->phi2(vCage[i]);
-        if(d2 != vCage[i])
+        if(d2!=vCage[i])
         {
-            //Si la cage est collée à une autre cage le long de cette arête
-            boundaryVertices.push_back(vCage[i]);
-            boundaryVertices.push_back(d2);
+            cageMarker.mark(vCage[i]);
         }
     }
 
-    while(boundaryVertices.size()>0)
+    do
     {
-        //S'il existe des sommets appartenant à la bordure de la cage
-        boundaryMarker.unmarkAll();
+        //Tant qu'il y a des sommets de la cage qui n'ont pas été traités
 
-        boundaryMarker.markOrbit<VERTEX>(boundaryVertices[0]);
-        boundaryMarker.markOrbit<VERTEX>(boundaryVertices[1]);
-
-        sumCur = 0;
-        i=0;
+        currentCage = -1;
         for(Dart d = trav_vert_cage.begin(); d != trav_vert_cage.end(); d = trav_vert_cage.next())
         {
-            if(boundaryMarker.isMarked(d))
+            if(cageMarker.isMarked(d))
             {
-                //S'il fait partie de la bordure actuellement traitée
-                sumCur += coordinatesEigen(index, i);
-                if(cage->getEmbedding<VERTEX>(d)==cage->getEmbedding<VERTEX>(boundaryVertices[0]))
+                d2 = cage->phi2(d);
+                if(currentCage != -1)
                 {
-                    boundaryVertices.erase(boundaryVertices.begin());
+                    if(cage->getEmbedding<FACE>(d2) == currentCage)
+                    {
+                        //Si le sommet trouvé fait aussi partie de la cage courante
+                        boundaryMarker.mark(d);
+                        boundaryMarker.mark(d2);
+                    }
                 }
                 else
                 {
-                    boundaryVertices.erase(boundaryVertices.begin()+1);
+                    if(std::find(cagesCalculated.begin(), cagesCalculated.end(), cage->getEmbedding<FACE>(d2)) == cagesCalculated.end())
+                    {
+                        boundaryMarker.mark(d);
+                        boundaryMarker.mark(d2);
+                        currentCage = cage->getEmbedding<FACE>(d2);
+                    }
                 }
-                boundaryMarker.unmarkOrbit<VERTEX>(d);
             }
-            ++i;
         }
-        res *= 1-sumCur;
-    }
+        if(currentCage != -1)
+        {
+            sumCur = 0;
+            i=0;
+            for(Dart d = trav_vert_cage.begin(); d != trav_vert_cage.end() && !boundaryMarker.isAllUnmarked(); d = trav_vert_cage.next())
+            {
+                if(boundaryMarker.isMarked(d))
+                {
+                    //S'il fait partie de la bordure actuellement traitée
+                    sumCur += coordinatesEigen(index, i);
+                    boundaryMarker.unmarkOrbit<VERTEX>(d);
+                }
+                ++i;
+            }
+            res *= 1-sumCur;
+            cagesCalculated.push_back(currentCage);
+        }
+    } while(currentCage != -1);
 
     return res;
 }
