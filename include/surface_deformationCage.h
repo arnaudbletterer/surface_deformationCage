@@ -103,7 +103,7 @@ private slots:
     PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
                             const VertexAttribute<PFP2::VEC3>& position);
 
-    PFP2::REAL boundaryWeightFunction(const std::vector<Dart>& vCage, PFP2::MAP* cage,
+    PFP2::REAL boundaryWeightFunction(const std::vector<Dart>& vCage, const std::vector<int>& vCageId, PFP2::MAP* cage,
                                       const Eigen::MatrixXf& coordinatesEigen, int index);
     PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
 

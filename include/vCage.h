@@ -16,8 +16,8 @@ namespace SCHNApps
 */
 class VCage {
    public:
-    VCage(int i=0)
-        :   m_cage()
+    VCage(int i=-1)
+        :   m_cage(), m_id_cage()
         {}
 
     void addVertex(Dart vertex)
@@ -41,6 +41,21 @@ class VCage {
         return m_cage;
     }
 
+    void addId(int id)
+    {
+        m_id_cage.push_back(id);
+    }
+
+    std::vector<int> getCageId()
+    {
+        return m_id_cage;
+    }
+
+    int getNbId()
+    {
+        return m_id_cage.size();
+    }
+
     static std::string CGoGNnameOfType()
     {
         return "VCage";
@@ -48,6 +63,7 @@ class VCage {
 
     private:
         std::vector<Dart> m_cage;
+        std::vector<int> m_id_cage;
 };
 
 } //namespace SCHNApps
