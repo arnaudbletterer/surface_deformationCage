@@ -97,7 +97,7 @@ private slots:
     void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                  const VertexAttribute<PFP2::VEC3>& positionCage,
                                  Eigen::MatrixXf& coordinates, int index,
-                                 const std::vector<Dart>& vCage, PFP2::MAP* cage);
+                                 const int idCage, PFP2::MAP* cage);
     PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
                           const VertexAttribute<PFP2::VEC3>& positionCage);
     PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,

@@ -46,9 +46,14 @@ class VCage {
         m_id_cage.push_back(id);
     }
 
-    std::vector<int> getCageId()
+    std::vector<int> getCagesId()
     {
         return m_id_cage;
+    }
+
+    int getCageId(int index)
+    {
+        return m_id_cage[index];
     }
 
     int getNbId()
