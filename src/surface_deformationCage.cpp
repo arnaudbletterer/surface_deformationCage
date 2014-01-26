@@ -271,7 +271,7 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
 {
     PFP2::REAL c, sumMVC(0.);
     int i = 0;
-    bool stop = false;
+    std::vector<int> cagesId;
 
     VertexAttribute<VCage> vCageCage = cage->getAttribute<VCage, VERTEX>("VCage");
     if(!vCageCage.isValid())
@@ -283,18 +283,14 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
 
     for(Dart d = trav_vert_cage.begin(); d != trav_vert_cage.end(); d = trav_vert_cage.next())
     {
-        stop = false;
-        for(int j=0; j<vCageCage[d].getNbId() && !stop; ++j)
+        cagesId = vCageCage[d].getCagesId();
+        if(std::find(cagesId.begin(), cagesId.end(), idCage) != cagesId.end())
         {
-            if(idCage == vCageCage[d].getCageId(j))
-            {
-                c = computeMVC2D(positionObject[vertex], d, cage, positionCage);
-                stop = true;
-            }
-            else
-            {
-                c = 0.;
-            }
+            c = computeMVC2D(positionObject[vertex], d, cage, positionCage);
+        }
+        else
+        {
+            c = 0.;
         }
         coordinates(index, i++) = c;
         sumMVC += c;
