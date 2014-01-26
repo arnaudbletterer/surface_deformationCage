@@ -28,7 +28,7 @@ namespace CGoGN
 namespace SCHNApps
 {
 
-#define M_H 0.6
+#define M_H 0.4
 
 struct MapParameters
 {

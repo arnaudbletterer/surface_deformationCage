@@ -244,10 +244,6 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
         PFP2::REAL res;
         for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d = trav_vert_object.next())
         {
-            for(int j=0; j<vCage[d].getNbId(); ++j)
-            {
-                CGoGNout << vCage[d].getCageId(j) << CGoGNendl;
-            }
             res = smoothingFunction(boundaryWeightFunction(vCage[d].getCage(), vCage[d].getCagesId(), cage, p.coordinatesEigen, i++));
             colorObject[d] = PFP2::VEC4(1-res, 0.f, res, 1.f);
         }
@@ -370,6 +366,9 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const std::vec
     DartMarker boundaryMarker(*cage);
     int currentCage;
     std::vector<int> cagesCalculated;
+    std::vector<int> cagesId;
+    std::vector<int> cagesId1;
+    bool stop = false;
 
     VertexAttribute<VCage> vCageCage = cage->getAttribute<VCage, VERTEX>("VCage");
 
@@ -377,18 +376,23 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const std::vec
     Dart d2;
     for(i=0; i<vCage.size(); ++i)
     {
+        stop = false;
         d2 = cage->phi2(vCage[i]);
-        if(d2 != vCage[i])
+        cagesId = vCageCage[vCage[i]].getCagesId();
+        cagesId1 = vCageCage[d2].getCagesId();
+        for(int j=0; j<cagesId.size() && !stop; ++j)
         {
-            cageMarker.markOrbit<VERTEX>(vCage[i]);
-            cageMarker.markOrbit<VERTEX>(d2);
+            if(std::find(cagesId1.begin(), cagesId1.end(), cagesId[j]) != cagesId1.end())
+            {
+                cageMarker.markOrbit<VERTEX>(vCage[i]);
+                cageMarker.markOrbit<VERTEX>(d2);
+                stop = true;
+            }
         }
     }
 
     do
     {
-        //Tant qu'il y a des sommets de la cage qui n'ont pas été traités
-
         currentCage = -1;
         for(Dart d  = trav_vert_cage.begin(); d != trav_vert_cage.end(); d = trav_vert_cage.next())
         {
@@ -396,17 +400,15 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const std::vec
             {
                 //Si le sommet courant fait partie de la cage associée au sommet actuellement traité
                 d2 = cage->phi2(d);
+                cagesId = vCageCage[d2].getCagesId();
                 if(currentCage != -1)
                 {
-                    for(i=0; i<vCageCage[d2].getNbId(); ++i)
+                    if(std::find(cagesId.begin(), cagesId.end(), currentCage) != cagesId.end())
                     {
-                        if(vCageCage[d2].getCagesId()[i] == currentCage)
-                        {
                             //Si le sommet trouvé fait aussi partie de la cage courante
                             boundaryMarker.markOrbit<VERTEX>(d);
                             boundaryMarker.markOrbit<VERTEX>(d2);
                             break;
-                        }
                     }
                 }
                 else
@@ -443,6 +445,8 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const std::vec
             res *= 1-sumCur;
             cagesCalculated.push_back(currentCage);
         }
+        boundaryMarker.unmarkAll();
+        cageMarker.unmarkAll();
     } while(currentCage != -1);
 
     return res;
