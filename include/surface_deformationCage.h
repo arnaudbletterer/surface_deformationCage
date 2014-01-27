@@ -20,8 +20,6 @@
 
 #include "Algo/Modelisation/voxellisation.h"
 
-#include "vCage.h"
-
 namespace CGoGN
 {
 
@@ -46,6 +44,7 @@ struct MapParameters
 struct CageParameters
 {
     VertexAttribute<PFP2::VEC3> cagePosition;
+
     MapHandlerGen* controlledObject;
     VertexAttribute<PFP2::VEC3> controlledObjectPosition;
 
@@ -53,7 +52,9 @@ struct CageParameters
     Eigen::Matrix<float, Eigen::Dynamic, 3> cagePositionEigen;
     Eigen::Matrix<float, Eigen::Dynamic, 3> objectPositionEigen;
 
-    Eigen::Matrix<Dart, Eigen::Dynamic, 1> dartObjectIndicesEigen;
+    Eigen::Matrix<float, Eigen::Dynamic, 1> boundaryWeightsEigen;
+
+    Dart beginningDart;
 };
 
 class Surface_DeformationCage_Plugin : public PluginInteraction
@@ -96,16 +97,16 @@ private slots:
 
     void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                  const VertexAttribute<PFP2::VEC3>& positionCage,
-                                 Eigen::MatrixXf& coordinates, int index,
-                                 const int idCage, PFP2::MAP* cage);
+                                 Eigen::MatrixXf& coordinates, int index, PFP2::MAP* cage, Dart beginningDart);
     PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
                           const VertexAttribute<PFP2::VEC3>& positionCage);
     PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
                             const VertexAttribute<PFP2::VEC3>& position);
 
-    PFP2::REAL boundaryWeightFunction(const std::vector<Dart>& vCage, PFP2::MAP* cage,
-                                      const Eigen::MatrixXf& coordinatesEigen, int vCageId, int index);
+    PFP2::REAL boundaryWeightFunction();
     PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
+
+    bool isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max);
 
 public slots:
     void computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
@@ -115,8 +116,7 @@ private:
     QAction* m_deformationCageAction;
 
 public:
-    QHash<QString, MapParameters> h_parameterSet;
-    QHash<MapHandlerGen*, CageParameters> h_cageParameters;
+    QHash<int, CageParameters> h_cageParameters;
 
 protected:
     CGoGN::Utils::ShaderColorPerVertex* m_colorPerVertexShader;

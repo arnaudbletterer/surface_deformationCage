@@ -35,39 +35,42 @@ Dialog_DeformationCage::Dialog_DeformationCage(SCHNApps* s, Surface_DeformationC
 
 void Dialog_DeformationCage::updateAppearanceFromPlugin()
 {
-    if(m_selectedObject && m_selectedCage)
-    {
-        if(m_plugin->h_cageParameters.contains(m_selectedCage))
-        {
-            CageParameters& p = m_plugin->h_cageParameters[m_selectedCage];
-            if(p.controlledObject==m_selectedObject)
-            {
-                group_linkState->setEnabled(true);
-                button_linkState->setText(QString("Unlink"));
-                progress_link->setValue(100);
-            }
-            else
-            {
-                group_linkState->setEnabled(false);
-                button_linkState->setText(QString("Link"));
-                progress_link->setValue(0);
-            }
-        }
-        else
-        {
-            group_linkState->setEnabled(true);
-            button_linkState->setText(QString("Link"));
-            progress_link->setValue(0);
-        }
-    }
-    else
-    {
-        button_linkState->setText(QString("Link"));
-        group_linkState->setEnabled(false);
-        progress_link->setValue(0);
-    }
-    combo_objectPositionAttribute->setEnabled(m_selectedObject);
-    combo_cagePositionAttribute->setEnabled(m_selectedCage);
+//    if(m_selectedObject && m_selectedCage)
+//    {
+//        MapHandler<PFP2>* mh_cage = static_cast<MapHandler<PFP2>*>(m_selectedCage);
+//        PFP2::MAP* cage = mh_cage->getMap();
+
+//        if(m_plugin->h_cageParameters.contains())
+//        {
+//            CageParameters& p = m_plugin->h_cageParameters[m_selectedCage];
+//            if(p.controlledObject==m_selectedObject)
+//            {
+//                group_linkState->setEnabled(true);
+//                button_linkState->setText(QString("Unlink"));
+//                progress_link->setValue(100);
+//            }
+//            else
+//            {
+//                group_linkState->setEnabled(false);
+//                button_linkState->setText(QString("Link"));
+//                progress_link->setValue(0);
+//            }
+//        }
+//        else
+//        {
+//            group_linkState->setEnabled(true);
+//            button_linkState->setText(QString("Link"));
+//            progress_link->setValue(0);
+//        }
+//    }
+//    else
+//    {
+//        button_linkState->setText(QString("Link"));
+//        group_linkState->setEnabled(false);
+//        progress_link->setValue(0);
+//    }
+//    combo_objectPositionAttribute->setEnabled(m_selectedObject);
+//    combo_cagePositionAttribute->setEnabled(m_selectedCage);
 }
 
 void Dialog_DeformationCage::addMapToLists(MapHandlerGen* m)
@@ -219,26 +222,26 @@ MapHandlerGen* Dialog_DeformationCage::getSelectedCage()
 
 void Dialog_DeformationCage::linkStateClicked()
 {
-    if(m_selectedObject && m_selectedCage)
-    {
-        if(!m_plugin->h_cageParameters.contains(m_selectedCage))
-        {
-            //S'il n'existait pas déjà un objet associé à la cage courante
-            m_plugin->computeMVCFromDialog();
-        }
-        else
-        {
-            CageParameters p = m_plugin->h_cageParameters[m_selectedCage];
-            if(p.controlledObject==m_selectedObject
-                    && p.cagePosition.name()==combo_cagePositionAttribute->currentText().toStdString()
-                    && p.controlledObjectPosition.name()==combo_objectPositionAttribute->currentText().toStdString())
-            {
-                //Si les deux éléments étaient actuellement liés, on les délie
-                m_plugin->h_cageParameters.remove(m_selectedCage);
-            }
-        }
-        updateAppearanceFromPlugin();
-    }
+//    if(m_selectedObject && m_selectedCage)
+//    {
+//        if(!m_plugin->h_cageParameters.contains(m_selectedCage))
+//        {
+//            //S'il n'existait pas déjà un objet associé à la cage courante
+//            m_plugin->computeMVCFromDialog();
+//        }
+//        else
+//        {
+//            CageParameters p = m_plugin->h_cageParameters[m_selectedCage];
+//            if(p.controlledObject==m_selectedObject
+//                    && p.cagePosition.name()==combo_cagePositionAttribute->currentText().toStdString()
+//                    && p.controlledObjectPosition.name()==combo_objectPositionAttribute->currentText().toStdString())
+//            {
+//                //Si les deux éléments étaient actuellement liés, on les délie
+//                m_plugin->h_cageParameters.remove(m_selectedCage);
+//            }
+//        }
+//        updateAppearanceFromPlugin();
+//    }
 }
 
 } // namespace SCHNApps
