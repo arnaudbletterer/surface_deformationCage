@@ -92,14 +92,14 @@ void Surface_DeformationCage_Plugin::mapRemoved(MapHandlerGen *map)
 
 void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QString nameAttr)
 {
-    if(orbit==VERTEX)
+    if(orbit == VERTEX)
     {
         MapHandlerGen* mhg_modified = static_cast<MapHandlerGen*>(QObject::sender());
         if(h_cageParameters.contains(mhg_modified))
         {
             //Si la carte venant d'être modifiée est une cage
             CageParameters& p = h_cageParameters[mhg_modified];
-            if(p.cagePosition.name()==nameAttr.toStdString())
+            if(p.cagePosition.name() == nameAttr.toStdString())
             {
                 //Si l'attribut venant d'être modifié est celui qui avait été utilisé lors de la liaison avec l'objet
                 MapHandler<PFP2>* mh_cage = static_cast<MapHandler<PFP2>*>(mhg_modified);
@@ -111,21 +111,21 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                 {
                     p.cagePositionEigen(i, 0) = p.cagePosition[d][0];
                     p.cagePositionEigen(i, 1) = p.cagePosition[d][1];
-                    p.cagePositionEigen(i++, 2) = p.cagePosition[d][2];
+                    p.cagePositionEigen(i, 2) = p.cagePosition[d][2];
+                    ++i;
                 }
 
                 MapHandler<PFP2>* mh_object = static_cast<MapHandler<PFP2>*>(p.controlledObject);
 
                 p.objectPositionEigen = p.coordinatesEigen*p.cagePositionEigen;
 
-                i = 0;
                 Dart d;
-                for(int i=0; i<p.dartObjectIndicesEigen.rows(); ++i)
+                for(i=0; i<p.dartObjectIndicesEigen.rows(); ++i)
                 {
                     d = p.dartObjectIndicesEigen(i, 0);
                     p.controlledObjectPosition[d][0] = p.objectPositionEigen(i, 0);
                     p.controlledObjectPosition[d][1] = p.objectPositionEigen(i, 1);
-                    p.controlledObjectPosition[d][2] = p.objectPositionEigen(i++, 2);
+                    p.controlledObjectPosition[d][2] = p.objectPositionEigen(i, 2);
                 }
 
                 mh_object->updateBB(p.controlledObjectPosition);
@@ -206,7 +206,8 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
         {
             p.cagePositionEigen(i, 0) = positionCage[d][0];
             p.cagePositionEigen(i, 1) = positionCage[d][1];
-            p.cagePositionEigen(i++, 2) = positionCage[d][2];
+            p.cagePositionEigen(i, 2) = positionCage[d][2];
+            ++i;
         }
 
         VertexAttribute<VCage> vCage= object->getAttribute<VCage, VERTEX>("VCage");
@@ -225,14 +226,13 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             m_deformationCageDialog->progress_link->setValue(m_deformationCageDialog->progress_link->value()+(int)total);
             m_deformationCageDialog->update();
             total += incr;
-            p.dartObjectIndicesEigen(i++, 0) = d;
+            p.dartObjectIndicesEigen(i, 0) = d;
+            ++i;
         }
 
         CGoGNout << "Temps de calcul des coordonnées MVC : " << chrono.elapsed() << " ms." << CGoGNendl;
 
         CGoGNout << "Calcul de la fonction de poids .." << CGoGNflush;
-
-        i = 0;
 
         VertexAttribute <PFP2::VEC4> colorObject = object->getAttribute<PFP2::VEC4, VERTEX>("color");
         if(!colorObject.isValid())
@@ -241,11 +241,13 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             mh_object->registerAttribute(colorObject);
         }
 
-        PFP2::REAL res;
-        for(Dart d = trav_vert_object.begin(); d!=trav_vert_object.end(); d = trav_vert_object.next())
+        PFP2::REAL res(0.);
+        Dart d;
+        for(i=0; i<p.dartObjectIndicesEigen.rows(); ++i)
         {
-            res = smoothingFunction(boundaryWeightFunction(vCage[d].getCage(), vCage[d].getCagesId(), cage, p.coordinatesEigen, i++));
-            colorObject[d] = PFP2::VEC4(1-res, 0.f, res, 1.f);
+            d = p.dartObjectIndicesEigen(i, 0);
+            res = smoothingFunction(boundaryWeightFunction(vCage[d].getCage(), cage, p.coordinatesEigen, vCage[d].getCageId(0), i));
+            colorObject[d] = PFP2::VEC4(1.f-res, 0.f, res, 1.f);
         }
 
         m_positionVBO->updateData(positionObject);
@@ -263,7 +265,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
   */
 void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                                                  const VertexAttribute<PFP2::VEC3>& positionCage, Eigen::MatrixXf& coordinates, int index,
-                                                                 const int idCage, PFP2::MAP* cage)
+                                                                 const int vCageId, PFP2::MAP* cage)
 {
     PFP2::REAL c, sumMVC(0.);
     int i = 0;
@@ -275,26 +277,29 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
         CGoGNout << "Attribut de sommet VCage non valide." << CGoGNendl;
         exit(-1);
     }
-    TraversorV<PFP2::MAP> trav_vert_cage(*cage);
 
+    TraversorV<PFP2::MAP> trav_vert_cage(*cage);
     for(Dart d = trav_vert_cage.begin(); d != trav_vert_cage.end(); d = trav_vert_cage.next())
     {
         cagesId = vCageCage[d].getCagesId();
-        if(std::find(cagesId.begin(), cagesId.end(), idCage) != cagesId.end())
+        if(std::find(cagesId.begin(), cagesId.end(), vCageId) != cagesId.end())
         {
             c = computeMVC2D(positionObject[vertex], d, cage, positionCage);
+            CGoGNout << c << CGoGNendl;
+            sumMVC += c;
         }
         else
         {
             c = 0.;
         }
-        coordinates(index, i++) = c;
-        sumMVC += c;
+        coordinates(index, i) = c;
+        ++i;
     }
 
     while(i>0)
     {
-        coordinates(index, --i) /= sumMVC;
+        --i;
+        coordinates(index, i) /= sumMVC;
     }
 }
 
@@ -348,80 +353,62 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     PFP2::REAL Bij = Geom::angle((vi-pt), (vj-pt));
     PFP2::REAL Bki = Geom::angle((vk-pt), (vi-pt));
 
-    res = (tan(Bki/2) + tan(Bij/2)) / ((vi-pt).norm());
+    res = (tan(Bki/2) + tan(Bij/2)) / ((pt-vi).norm());
 
     return res;
 }
 
 
-PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const std::vector<Dart>& vCage, const std::vector<int>& vCageId, PFP2::MAP* cage,
-                                                                  const Eigen::MatrixXf& coordinatesEigen, int index)
+PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const std::vector<Dart>& vCage, PFP2::MAP* cage,
+                                                                  const Eigen::MatrixXf& coordinatesEigen, int vCageId, int index)
 {
     PFP2::REAL res(1);
 
-    int i=0;
+    unsigned int i=0;
     PFP2::REAL sumCur(0);
-    TraversorV<PFP2::MAP> trav_vert_cage(*cage);
-    DartMarker cageMarker(*cage);
-    DartMarker boundaryMarker(*cage);
-    int currentCage;
+
+    int currentCage = -1;
     std::vector<int> cagesCalculated;
     std::vector<int> cagesId;
-    std::vector<int> cagesId1;
-    bool stop = false;
+    DartMarker boundaryMarker(*cage);
 
     VertexAttribute<VCage> vCageCage = cage->getAttribute<VCage, VERTEX>("VCage");
-
-    //On marque les sommets de la cage
-    Dart d2;
-    for(i=0; i<vCage.size(); ++i)
+    if(!vCageCage.isValid())
     {
-        stop = false;
-        d2 = cage->phi2(vCage[i]);
-        cagesId = vCageCage[vCage[i]].getCagesId();
-        cagesId1 = vCageCage[d2].getCagesId();
-        for(int j=0; j<cagesId.size() && !stop; ++j)
-        {
-            if(std::find(cagesId1.begin(), cagesId1.end(), cagesId[j]) != cagesId1.end())
-            {
-                cageMarker.markOrbit<VERTEX>(vCage[i]);
-                cageMarker.markOrbit<VERTEX>(d2);
-                stop = true;
-            }
-        }
+        CGoGNout << "Attribut de sommet VCage non valide." << CGoGNendl;
+        exit(-1);
     }
 
+    TraversorV<PFP2::MAP> trav_vert_cage(*cage);
     do
     {
         currentCage = -1;
-        for(Dart d  = trav_vert_cage.begin(); d != trav_vert_cage.end(); d = trav_vert_cage.next())
+        for(i=0; i<vCage.size(); ++i)
         {
-            if(cageMarker.isMarked(d))
+            cagesId = vCageCage[vCage[i]].getCagesId(); //Identifiants de toutes les cages associées à ce sommet de cage
+            if(currentCage != -1)
             {
-                //Si le sommet courant fait partie de la cage associée au sommet actuellement traité
-                d2 = cage->phi2(d);
-                cagesId = vCageCage[d2].getCagesId();
-                if(currentCage != -1)
+                //Si on est actuellement en train de traiter une cage adjacente
+                if(std::find(cagesId.begin(), cagesId.end(), currentCage) != cagesId.end())
                 {
-                    if(std::find(cagesId.begin(), cagesId.end(), currentCage) != cagesId.end())
-                    {
-                            //Si le sommet trouvé fait aussi partie de la cage courante
-                            boundaryMarker.markOrbit<VERTEX>(d);
-                            boundaryMarker.markOrbit<VERTEX>(d2);
-                            break;
-                    }
+                    //Si le sommet en cours de traitement appartient aussi à la cage adjacente en cours de traitement
+                    boundaryMarker.markOrbit<VERTEX>(vCage[i]);
+                    boundaryMarker.markOrbit<VERTEX>(cage->phi2(vCage[i]));
                 }
-                else
+            }
+            else
+            {
+                //Si aucune cage adjacente n'est actuellement en cours de traitement
+                for(unsigned int j=0; j<cagesId.size() && currentCage == -1; ++j)
                 {
-                    for(i=0; i<vCageCage[d2].getNbId() && currentCage == -1; ++i)
+                    if(std::find(cagesCalculated.begin(), cagesCalculated.end(), cagesId[j]) == cagesCalculated.end()
+                            && cagesId[j] != vCageId)
                     {
-                        if(std::find(cagesCalculated.begin(), cagesCalculated.end(), vCageCage[d2].getCageId(i)) == cagesCalculated.end())
-                        {
-                            //Si la cage n'avait pas encore été calculée
-                            boundaryMarker.markOrbit<VERTEX>(d);
-                            boundaryMarker.markOrbit<VERTEX>(d2);
-                            currentCage = vCageCage[d2].getCageId(i);
-                        }
+                        //Si la cage adjacente n'avait pas encore été traitée
+                        cagesCalculated.push_back(cagesId[j]);
+                        currentCage = cagesId[j];
+                        boundaryMarker.markOrbit<VERTEX>(vCage[i]);
+                        boundaryMarker.markOrbit<VERTEX>(cage->phi2(vCage[i]));
                     }
                 }
             }
@@ -429,24 +416,21 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const std::vec
 
         if(currentCage != -1)
         {
+            //Si une cage adjacente est en cours de traitement
             sumCur = 0;
-            i=0;
+            i = 0;
             for(Dart d = trav_vert_cage.begin(); d != trav_vert_cage.end() && !boundaryMarker.isAllUnmarked(); d = trav_vert_cage.next())
             {
                 if(boundaryMarker.isMarked(d))
                 {
-                    //S'il fait partie de la bordure actuellement traitée
+                    //Si le sommet en cours de traitement appartient à la cage adjacente en cours de traitement
                     sumCur += coordinatesEigen(index, i);
                     boundaryMarker.unmarkOrbit<VERTEX>(d);
-                    boundaryMarker.unmarkOrbit<VERTEX>(cage->phi2(d));
                 }
                 ++i;
             }
             res *= 1-sumCur;
-            cagesCalculated.push_back(currentCage);
         }
-        boundaryMarker.unmarkAll();
-        cageMarker.unmarkAll();
     } while(currentCage != -1);
 
     return res;
