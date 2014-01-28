@@ -26,7 +26,7 @@ namespace CGoGN
 namespace SCHNApps
 {
 
-#define M_H 1.0
+#define M_H 1.
 
 struct MapParameters
 {
@@ -55,6 +55,8 @@ struct CageParameters
     Eigen::Matrix<float, Eigen::Dynamic, 1> boundaryWeightsEigen;
 
     Dart beginningDart;
+
+    PFP2::VEC3 min, max;
 };
 
 class Surface_DeformationCage_Plugin : public PluginInteraction
@@ -103,7 +105,7 @@ private slots:
     PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
                             const VertexAttribute<PFP2::VEC3>& position);
 
-    PFP2::REAL boundaryWeightFunction();
+    PFP2::REAL boundaryWeightFunction(const Eigen::MatrixXf& coordinates, Dart beginningDart, PFP2::MAP* cage, int index);
     PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
 
     bool isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max);
