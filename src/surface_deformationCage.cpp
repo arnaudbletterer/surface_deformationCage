@@ -293,6 +293,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 
         for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
         {
+            CGoGNout << "-------" << CGoGNendl;
             index_cage = cage->getEmbedding<FACE>(d);
             if(h_cageParameters.contains(index_cage))
             {
@@ -402,15 +403,14 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
 
 PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::MatrixXf& coordinates, Dart beginningDart, PFP2::MAP* cage, int index)
 {
-    PFP2::REAL res(1.);
+    PFP2::REAL res(1.), sumCur(0.);
+
+    DartMarker marker(*cage);
+    Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, beginningDart);
 
     int currentFace = -1;
-    std::vector<int> facesCalculated;
     Dart d2;
     int i = 0;
-
-    Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, beginningDart);
-    PFP2::REAL sumCur(0.);
 
     do
     {
@@ -421,18 +421,18 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::M
         //On recherche les sommets appartenant au prochain bord
         for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end(); d = trav_vert_face_cage.next())
         {
-            d2 = cage->phi2(d);
             if(cage->vertexDegree(d)>2)
             {
                 //Si le sommet fait partie de plus d'une cage
+                d2 = cage->phi2(d);
                 if(currentFace == -1)
                 {
-                    if(std::find(facesCalculated.begin(), facesCalculated.end(), cage->getEmbedding<FACE>(d2)) == facesCalculated.end())
+                    if(!marker.isMarked(d2))
                     {
                         //Si la face n'a pas encore été traitée
                         currentFace = cage->getEmbedding<FACE>(d2);
                         sumCur += coordinates(index, i);
-                        facesCalculated.push_back(currentFace);
+                        marker.markOrbit<FACE>(d2);
                     }
                 }
                 else
@@ -442,6 +442,10 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::M
                         sumCur += coordinates(index, i);
                     }
                 }
+            }
+            else
+            {
+                CGoGNout << "Sommet : " << d << CGoGNendl;
             }
             ++i;
         }
@@ -463,8 +467,8 @@ PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL& x
         if(h>FLT_EPSILON)
         {
             //return (1/2. * std::sin(degreeToRadian(M_PI*(x/h-1/2.))) + 1/2.);
-            //return -2*(x/h)*(x/h)*(x/h) + 3*(x/h)*(x/h);
-            return -8*(x/h)*(x/h)*(x/h)*(x/h)*(x/h) + 20*(x/h)*(x/h)*(x/h)*(x/h);
+            return -2*(x/h)*(x/h)*(x/h) + 3*(x/h)*(x/h);
+            //return - 8*(x/h)*(x/h)*(x/h)*(x/h)*(x/h) + 20*(x/h)*(x/h)*(x/h)*(x/h) - 18*(x/h)*(x/h)*(x/h) + 7*(x/h)*(x/h);
         }
         else
         {
@@ -479,6 +483,36 @@ bool Surface_DeformationCage_Plugin::isInCage(PFP2::VEC3 point, PFP2::VEC3 min, 
     {
         return true;
     }
+//    else if(almostEqual2sComplement(min[0], point[0]) || almostEqual2sComplement(min[1], point[1])
+//                && max[0] >= point[0] && max[1] >= point[1])
+//        {
+//            return true;
+//        }
+//    else if(almostEqual2sComplement(max[0], point[0]) || almostEqual2sComplement(max[1], point[1])
+//                && min[0] <= point[0] && min[1] <= point[1])
+//    {
+//        return true;
+//    }
+    return false;
+}
+
+
+// http://www.cygnus-software.com/papers/comparingfloats/Comparing%20floating%20point%20numbers.htm
+bool Surface_DeformationCage_Plugin::almostEqual2sComplement(PFP2::REAL A, PFP2::REAL B)
+{
+    int maxUlps = 10;
+
+    int aInt = *(int*)&A;
+    // Make aInt lexicographically ordered as a twos-complement int
+    if (aInt < 0)
+        aInt = 0x80000000 - aInt;
+    // Make bInt lexicographically ordered as a twos-complement int
+    int bInt = *(int*)&B;
+    if (bInt < 0)
+        bInt = 0x80000000 - bInt;
+    int intDiff = abs(aInt - bInt);
+    if (intDiff <= maxUlps)
+        return true;
     return false;
 }
 
