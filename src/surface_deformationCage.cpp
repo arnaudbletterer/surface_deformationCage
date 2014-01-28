@@ -286,14 +286,11 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                         ++i;
                     }
                 }
-
-                i = 0;
             }
         }
 
         for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
         {
-            CGoGNout << "-------" << CGoGNendl;
             index_cage = cage->getEmbedding<FACE>(d);
             if(h_cageParameters.contains(index_cage))
             {
@@ -442,10 +439,6 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::M
                         sumCur += coordinates(index, i);
                     }
                 }
-            }
-            else
-            {
-                CGoGNout << "Sommet : " << d << CGoGNendl;
             }
             ++i;
         }
