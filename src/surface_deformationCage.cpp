@@ -97,11 +97,14 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
         MapHandlerGen* mhg_modified = static_cast<MapHandlerGen*>(QObject::sender());
         MapHandler<PFP2>* mh_cage = static_cast<MapHandler<PFP2>*>(mhg_modified);
         PFP2::MAP* cage = mh_cage->getMap();
+        MapHandler<PFP2>* mh_object;
+        PFP2::MAP* object;
+        VertexAttribute<PFP2::VEC3> positionObject;
 
         if(cage->isOrbitEmbedded<FACE>())
         {
             int index_cage;
-            MapHandler<PFP2>* mh_object;
+
             TraversorF<PFP2::MAP> trav_face_cage(*cage);
             for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
             {
@@ -125,21 +128,36 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
 
                         p.objectPositionEigen = p.coordinatesEigen*p.cagePositionEigen;
 
-                        for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
+                        mh_object = static_cast<MapHandler<PFP2>*>(p.controlledObject);
+                        object = mh_object->getMap();
+
+                        i = 0;
+
+                        VertexAttribute<Dart> indexCageObject = object->getAttribute<Dart, VERTEX>("indexCage");
+
+                        TraversorV<PFP2::MAP> trav_vert_object(*object);
+                        for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
                         {
-                            p.controlledObjectPosition[dd][0] = p.objectPositionEigen(i, 0);
-                            p.controlledObjectPosition[dd][1] = p.objectPositionEigen(i, 1);
-                            p.controlledObjectPosition[dd][2] = p.objectPositionEigen(i, 2);
+                            if(indexCageObject[dd]==p.beginningDart)
+                            {
+                                p.controlledObjectPosition[dd][0] = p.objectPositionEigen(i, 0);
+                                p.controlledObjectPosition[dd][1] = p.objectPositionEigen(i, 1);
+                                p.controlledObjectPosition[dd][2] = p.objectPositionEigen(i, 2);
+                            }
+                            ++i;
                         }
 
-                        mh_object = static_cast<MapHandler<PFP2>*>(p.controlledObject);
-
-                        mh_object->updateBB(p.controlledObjectPosition);
-                        mh_object->notifyAttributeModification(p.controlledObjectPosition);
-                        mh_object->notifyConnectivityModification();
+                        positionObject = p.controlledObjectPosition;
                     }
                 }
             }
+
+//            if(mh_object)
+//            {
+//                mh_object->updateBB(positionObject);
+//                mh_object->notifyAttributeModification(positionObject);
+//                mh_object->notifyConnectivityModification();
+//            }
         }
     }
 }
@@ -191,6 +209,13 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             return;
         }
 
+        VertexAttribute<Dart> indexCageObject = object->getAttribute<Dart, VERTEX>("indexCage");
+        if(!indexCageObject.isValid())
+        {
+            indexCageObject = object->addAttribute<Dart, VERTEX>("indexCage");
+            mh_object->registerAttribute(indexCageObject);
+        }
+
         int index_cage;
         int i;
 
@@ -206,7 +231,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
         for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
         {
             index_cage = cage->getEmbedding<FACE>(d);
-            if((!h_cageParameters.contains(index_cage)) && index_cage < 4)
+            if((!h_cageParameters.contains(index_cage)) && index_cage != 1)
             {
                 objectNbV = 0;
                 cageNbV = 0;
@@ -253,9 +278,10 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 
                 for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
                 {
-                    if(isInCage(positionObject[dd], p.min, p.max))
+                    if(indexCageObject[dd]==EMBNULL && isInCage(positionObject[dd], p.min, p.max))
                     {
                         ++objectNbV;
+                        indexCageObject[dd] = p.beginningDart;
                     }
                 }
 
@@ -277,7 +303,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                 //Calcul des coordonnées
                 for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
                 {
-                    if(isInCage(positionObject[dd], p.min, p.max))
+                    if(p.beginningDart == indexCageObject[dd])
                     {
                         p.objectPositionEigen(i, 0) = positionObject[dd][0];
                         p.objectPositionEigen(i, 1) = positionObject[dd][1];
@@ -289,6 +315,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             }
         }
 
+        int j = 0;
         for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
         {
             index_cage = cage->getEmbedding<FACE>(d);
@@ -301,7 +328,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                 //Calcul de la fonction de poids de bordure
                 for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
                 {
-                    if(isInCage(positionObject[dd], p.min, p.max))
+                    if(indexCageObject[dd] == p.beginningDart)
                     {
                         p.boundaryWeightsEigen(i, 0) = smoothingFunction(boundaryWeightFunction(p.coordinatesEigen, p.beginningDart, cage, i));
                         colorObject[dd] = PFP2::VEC4(p.boundaryWeightsEigen(i, 0), 0.f, 1.f - p.boundaryWeightsEigen(i, 0), 1.f);
@@ -309,6 +336,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                     }
                 }
             }
+            ++j;
         }
 
         m_positionVBO->updateData(positionObject);
@@ -327,19 +355,37 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
 {
     PFP2::REAL sumMVC(0.);
     int i = 0;
+    bool stop = false;
 
     Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, beginningDart);
-    for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end(); d = trav_vert_face_cage.next())
+    for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end() && !stop; d = trav_vert_face_cage.next())
     {
         coordinates(index, i) = computeMVC2D(positionObject[vertex], d, cage, positionCage);
-        sumMVC += coordinates(index, i);
+        if(coordinates(index, i) <= FLT_EPSILON)
+        {
+            stop = true;
+        }
+        else
+        {
+            sumMVC += coordinates(index, i);
+        }
         ++i;
     }
 
-    while(i>0)
+    if(!stop)
     {
-        --i;
-        coordinates(index, i) /= sumMVC;
+        while(i>0)
+        {
+            --i;
+            coordinates(index, i) /= sumMVC;
+        }
+    }
+    else
+    {
+        for(int j=0; j<coordinates.cols(); ++j)
+        {
+            coordinates(index, j) = 0.f;
+        }
     }
 }
 
@@ -393,7 +439,17 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     PFP2::REAL Bij = Geom::angle((vi-pt), (vj-pt));
     PFP2::REAL Bki = Geom::angle((vk-pt), (vi-pt));
 
-    res = (tan(Bki/2) + tan(Bij/2)) / ((pt-vi).norm());
+    PFP2::REAL sinBki = sin(Bki);
+    PFP2::REAL sinBij = sin(Bij);
+
+    if(isnan(sinBki) || isnan(sinBij))
+    {
+        return 0.f;
+    }
+
+    PFP2::REAL tanBki = (1-cos(Bki))/sinBki;
+    PFP2::REAL tanBij = (1-cos(Bij))/sinBij;
+    res = (tanBki + tanBij) /((pt-vi).norm());
 
     return res;
 }
@@ -418,7 +474,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::M
         //On recherche les sommets appartenant au prochain bord
         for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end(); d = trav_vert_face_cage.next())
         {
-            if(cage->vertexDegree(d)>2)
+            if(cage->vertexDegree(d) > 2)
             {
                 //Si le sommet fait partie de plus d'une cage
                 d2 = cage->phi2(d);
@@ -450,62 +506,37 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::M
     return res;
 }
 
-PFP2::REAL degreeToRadian(const PFP2::REAL& deg)
-{
-    return deg*M_PI/180.0;
-}
-
 PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h)
 {
-        if(h>FLT_EPSILON)
-        {
-            //return (1/2. * std::sin(degreeToRadian(M_PI*(x/h-1/2.))) + 1/2.);
-            return -2*(x/h)*(x/h)*(x/h) + 3*(x/h)*(x/h);
-            //return - 8*(x/h)*(x/h)*(x/h)*(x/h)*(x/h) + 20*(x/h)*(x/h)*(x/h)*(x/h) - 18*(x/h)*(x/h)*(x/h) + 7*(x/h)*(x/h);
-        }
-        else
-        {
-            return 0.;
-        }
+    if(x >= h)
+    {
+        return 1.f;
+    }
+    if(h > FLT_EPSILON)
+    {
+        return (1/2. * std::sin(M_PI*(x/h-1/2.)) + 1/2.);
+        //return -2*(x/h)*(x/h)*(x/h) + 3*(x/h)*(x/h);
+        //return - 8*(x/h)*(x/h)*(x/h)*(x/h)*(x/h) + 20*(x/h)*(x/h)*(x/h)*(x/h) - 18*(x/h)*(x/h)*(x/h) + 7*(x/h)*(x/h);
+    }
+    else
+    {
+        return 0.;
+    }
 }
 
 bool Surface_DeformationCage_Plugin::isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max)
 {
-    if(min[0] <= point[0] && min[1] <= point[1]
-            && max[0] >= point[0] && max[1] >= point[1])
-    {
-        return true;
-    }
-//    else if(almostEqual2sComplement(min[0], point[0]) || almostEqual2sComplement(min[1], point[1])
-//                && max[0] >= point[0] && max[1] >= point[1])
-//        {
-//            return true;
-//        }
-//    else if(almostEqual2sComplement(max[0], point[0]) || almostEqual2sComplement(max[1], point[1])
-//                && min[0] <= point[0] && min[1] <= point[1])
+//    if(min[0]-(eps_x?FLT_EPSILON:0) <= point[0] && min[1]-(eps_y?FLT_EPSILON:0) <= point[1]
+//            && max[0]+(eps_x?FLT_EPSILON:0) >= point[0] && max[1]+(eps_y?FLT_EPSILON:0) >= point[1])
 //    {
 //        return true;
 //    }
-    return false;
-}
-
-
-// http://www.cygnus-software.com/papers/comparingfloats/Comparing%20floating%20point%20numbers.htm
-bool Surface_DeformationCage_Plugin::almostEqual2sComplement(PFP2::REAL A, PFP2::REAL B)
-{
-    int maxUlps = 10;
-
-    int aInt = *(int*)&A;
-    // Make aInt lexicographically ordered as a twos-complement int
-    if (aInt < 0)
-        aInt = 0x80000000 - aInt;
-    // Make bInt lexicographically ordered as a twos-complement int
-    int bInt = *(int*)&B;
-    if (bInt < 0)
-        bInt = 0x80000000 - bInt;
-    int intDiff = abs(aInt - bInt);
-    if (intDiff <= maxUlps)
+    if(point[0]+0.0001f > min[0] && point[1]+0.0001f > min[1]
+            && point[0]-0.0001f < max[0] && point[1]-0.0001f < max[1])
+    {
         return true;
+    }
+
     return false;
 }
 

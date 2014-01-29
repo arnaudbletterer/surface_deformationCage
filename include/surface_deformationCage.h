@@ -5,20 +5,13 @@
 
 #include <cmath>
 
-#include "Algo/Modelisation/voxellisation.h"
-#include "Algo/Modelisation/triangulation.h"
-#include "Algo/MC/marchingcube.h"
-#include "Algo/Import/import.h"
-
-#include "Utils/chrono.h"
-
 #include "dialog_deformationCage.h"
 
 #include "mapHandler.h"
 
 #include "MVCCoordinates.h"
 
-#include "Algo/Modelisation/voxellisation.h"
+#include "Eigen/Geometry"
 
 namespace CGoGN
 {
@@ -26,7 +19,7 @@ namespace CGoGN
 namespace SCHNApps
 {
 
-#define M_H 0.4
+#define M_H 0.6f
 
 struct MapParameters
 {
@@ -110,6 +103,8 @@ private slots:
 
     bool isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max);
     bool almostEqual2sComplement(PFP2::REAL A, PFP2::REAL B);
+
+    PFP2::REAL degreeToRadian(const PFP2::REAL& deg);
 
 public slots:
     void computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
