@@ -355,6 +355,8 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
 {
     PFP2::REAL sumMVC(0.);
     int i = 0;
+    Dart recherche;
+    int index_recherche = -1;
     bool stop = false;
 
     Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, beginningDart);
@@ -363,7 +365,28 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
         coordinates(index, i) = computeMVC2D(positionObject[vertex], d, cage, positionCage);
         if(coordinates(index, i) <= FLT_EPSILON)
         {
-            stop = true;
+            if(index_recherche != -1)
+            {
+                //Si on est en mode recherche d'un autre sommet
+                PFP2::REAL w = (positionObject[vertex]-positionCage[recherche]).norm2()
+                        / (positionCage[d]-positionCage[recherche]).norm2();
+                coordinates(index, index_recherche) = w;
+                coordinates(index, i) = 1-w;
+                stop = true;
+                for(int j = i+1; j < coordinates.cols(); ++j)
+                {
+                    coordinates(index, j) = 0.f;
+                }
+            }
+            else
+            {
+                recherche = d;
+                index_recherche = i;
+                for(int j = i-1; j >= 0; --j)
+                {
+                    coordinates(index, j) = 0.f;
+                }
+            }
         }
         else
         {
@@ -378,13 +401,6 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
         {
             --i;
             coordinates(index, i) /= sumMVC;
-        }
-    }
-    else
-    {
-        for(int j=0; j<coordinates.cols(); ++j)
-        {
-            coordinates(index, j) = 0.f;
         }
     }
 }
