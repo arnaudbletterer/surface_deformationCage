@@ -97,8 +97,8 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
         MapHandlerGen* mhg_modified = static_cast<MapHandlerGen*>(QObject::sender());
         MapHandler<PFP2>* mh_cage = static_cast<MapHandler<PFP2>*>(mhg_modified);
         PFP2::MAP* cage = mh_cage->getMap();
-        MapHandler<PFP2>* mh_object;
-        PFP2::MAP* object;
+        MapHandler<PFP2>* mh_object = NULL;
+        PFP2::MAP* object = NULL;
         VertexAttribute<PFP2::VEC3> positionObject;
 
         if(cage->isOrbitEmbedded<FACE>())
@@ -129,35 +129,43 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                         p.objectPositionEigen = p.coordinatesEigen*p.cagePositionEigen;
 
                         mh_object = static_cast<MapHandler<PFP2>*>(p.controlledObject);
-                        object = mh_object->getMap();
-
-                        i = 0;
-
-                        VertexAttribute<Dart> indexCageObject = object->getAttribute<Dart, VERTEX>("indexCage");
-
-                        TraversorV<PFP2::MAP> trav_vert_object(*object);
-                        for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
+                        if(mh_object)
                         {
-                            if(indexCageObject[dd]==p.beginningDart)
-                            {
-                                p.controlledObjectPosition[dd][0] = p.objectPositionEigen(i, 0);
-                                p.controlledObjectPosition[dd][1] = p.objectPositionEigen(i, 1);
-                                p.controlledObjectPosition[dd][2] = p.objectPositionEigen(i, 2);
-                            }
-                            ++i;
-                        }
+                            object = mh_object->getMap();
 
-                        positionObject = p.controlledObjectPosition;
+                            i = 0;
+
+                            VertexAttribute<Dart> indexCageObject = object->getAttribute<Dart, VERTEX>("indexCage");
+                            if(!indexCageObject.isValid())
+                            {
+                                CGoGNout << "indexCage attribute chosen for the object isn't valid" << CGoGNendl;
+                                return;
+                            }
+
+                            TraversorV<PFP2::MAP> trav_vert_object(*object);
+                            for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
+                            {
+                                if(indexCageObject[dd] == p.beginningDart)
+                                {
+                                    p.controlledObjectPosition[dd][0] = p.objectPositionEigen(i, 0);
+                                    p.controlledObjectPosition[dd][1] = p.objectPositionEigen(i, 1);
+                                    p.controlledObjectPosition[dd][2] = p.objectPositionEigen(i, 2);
+                                }
+                                ++i;
+                            }
+
+                            positionObject = p.controlledObjectPosition;
+                        }
                     }
                 }
             }
 
-//            if(mh_object)
-//            {
-//                mh_object->updateBB(positionObject);
-//                mh_object->notifyAttributeModification(positionObject);
-//                mh_object->notifyConnectivityModification();
-//            }
+            if(mh_object)
+            {
+                mh_object->updateBB(positionObject);
+                mh_object->notifyAttributeModification(positionObject);
+                mh_object->notifyConnectivityModification();
+            }
         }
     }
 }
@@ -330,8 +338,11 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                 {
                     if(indexCageObject[dd] == p.beginningDart)
                     {
-                        p.boundaryWeightsEigen(i, 0) = smoothingFunction(boundaryWeightFunction(p.coordinatesEigen, p.beginningDart, cage, i));
-                        colorObject[dd] = PFP2::VEC4(p.boundaryWeightsEigen(i, 0), 0.f, 1.f - p.boundaryWeightsEigen(i, 0), 1.f);
+                        if(j==0)
+                        {
+                            p.boundaryWeightsEigen(i, 0) = smoothingFunction(boundaryWeightFunction(p.coordinatesEigen, p.beginningDart, cage, i));
+                            colorObject[dd] = PFP2::VEC4(p.boundaryWeightsEigen(i, 0), 0.f, 1.f - p.boundaryWeightsEigen(i, 0), 1.f);
+                        }
                         ++i;
                     }
                 }
@@ -365,17 +376,26 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
         coordinates(index, i) = computeMVC2D(positionObject[vertex], d, cage, positionCage);
         if(coordinates(index, i) <= FLT_EPSILON)
         {
+            if(index == 7)
+                CGoGNout << "I : " << i << " |" << positionCage[d] << "| coordinates : " << coordinates(index, i) << CGoGNendl;
             if(index_recherche != -1)
             {
                 //Si on est en mode recherche d'un autre sommet
-                PFP2::REAL w = (positionObject[vertex]-positionCage[recherche]).norm2()
-                        / (positionCage[d]-positionCage[recherche]).norm2();
-                coordinates(index, index_recherche) = w;
-                coordinates(index, i) = 1-w;
-                stop = true;
-                for(int j = i+1; j < coordinates.cols(); ++j)
+                if(cage->sameEdge(d,recherche))
                 {
-                    coordinates(index, j) = 0.f;
+                    //Si le sommet fait partie de la même arête que l'autre sommet recherché
+                    PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
+                            / (positionCage[d]-positionCage[recherche]).norm2());
+
+                    coordinates(index, index_recherche) = w;
+                    coordinates(index, i) = 1-w;
+
+                    stop = true;
+
+                    for(int j = i+1; j < coordinates.cols(); ++j)
+                    {
+                        coordinates(index, j) = 0.f;
+                    }
                 }
             }
             else
@@ -458,7 +478,9 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     PFP2::REAL sinBki = sin(Bki);
     PFP2::REAL sinBij = sin(Bij);
 
-    if(isnan(sinBki) || isnan(sinBij))
+    bool stop = false;
+
+    if(isnan(sinBki) || isnan(sinBij) || fabs(sinBki)<FLT_EPSILON || fabs(sinBij)<FLT_EPSILON)
     {
         return 0.f;
     }
@@ -530,9 +552,9 @@ PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL& x
     }
     if(h > FLT_EPSILON)
     {
-        return (1/2. * std::sin(M_PI*(x/h-1/2.)) + 1/2.);
+        //return (1/2. * std::sin(M_PI*(x/h-1/2.)) + 1/2.);
         //return -2*(x/h)*(x/h)*(x/h) + 3*(x/h)*(x/h);
-        //return - 8*(x/h)*(x/h)*(x/h)*(x/h)*(x/h) + 20*(x/h)*(x/h)*(x/h)*(x/h) - 18*(x/h)*(x/h)*(x/h) + 7*(x/h)*(x/h);
+        return -8*(x/h)*(x/h)*(x/h)*(x/h)*(x/h) + 20*(x/h)*(x/h)*(x/h)*(x/h) - 18*(x/h)*(x/h)*(x/h) + 7*(x/h)*(x/h);
     }
     else
     {
@@ -547,8 +569,8 @@ bool Surface_DeformationCage_Plugin::isInCage(PFP2::VEC3 point, PFP2::VEC3 min, 
 //    {
 //        return true;
 //    }
-    if(point[0]+0.0001f > min[0] && point[1]+0.0001f > min[1]
-            && point[0]-0.0001f < max[0] && point[1]-0.0001f < max[1])
+    if(point[0]+FLT_EPSILON*100 > min[0] && point[1]+FLT_EPSILON*100 > min[1]
+            && point[0]-FLT_EPSILON*100 < max[0] && point[1]-FLT_EPSILON*100 < max[1])
     {
         return true;
     }
