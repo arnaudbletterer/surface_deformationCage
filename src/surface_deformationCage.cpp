@@ -553,6 +553,27 @@ PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL& x
     }
 }
 
+
+PFP2::REAL Surface_DeformationCage_Plugin::vertexInfluenceFunction(PFP2::MAP* cage, const std::vector<Dart>& joinCage, Dart v)
+{
+    PFP2::REAL res(1.);
+    PFP2::REAL fCur(0.);
+
+    for(int i=0; i<joinCage.size(); ++i)
+    {
+        fCur = 0.;
+
+        for(int j=0; j<joinCage.size(); ++j)
+        {
+
+        }
+
+        res *= fCur;
+    }
+
+    return res;
+}
+
 bool Surface_DeformationCage_Plugin::isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max)
 {
     if(point[0]+FLT_EPSILON > min[0] && point[1]+FLT_EPSILON > min[1]

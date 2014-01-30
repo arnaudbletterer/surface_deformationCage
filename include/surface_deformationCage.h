@@ -98,13 +98,14 @@ private slots:
     PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
                             const VertexAttribute<PFP2::VEC3>& position);
 
+    /*
+     *Fonctions de l'article
+     */
     PFP2::REAL boundaryWeightFunction(const Eigen::MatrixXf& coordinates, Dart beginningDart, PFP2::MAP* cage, int index);
     PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
+    PFP2::REAL vertexInfluenceFunction(PFP2::MAP* cage, const std::vector<Dart>& joinCage, Dart v);
 
     bool isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max);
-    bool almostEqual2sComplement(PFP2::REAL A, PFP2::REAL B);
-
-    PFP2::REAL degreeToRadian(const PFP2::REAL& deg);
 
 public slots:
     void computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
