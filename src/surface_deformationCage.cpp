@@ -338,11 +338,8 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                 {
                     if(indexCageObject[dd] == p.beginningDart)
                     {
-                        if(j==0)
-                        {
-                            p.boundaryWeightsEigen(i, 0) = smoothingFunction(boundaryWeightFunction(p.coordinatesEigen, p.beginningDart, cage, i));
-                            colorObject[dd] = PFP2::VEC4(p.boundaryWeightsEigen(i, 0), 0.f, 1.f - p.boundaryWeightsEigen(i, 0), 1.f);
-                        }
+                        p.boundaryWeightsEigen(i, 0) = smoothingFunction(boundaryWeightFunction(p.coordinatesEigen, p.beginningDart, cage, i));
+                        colorObject[dd] = PFP2::VEC4(p.boundaryWeightsEigen(i, 0), 0.f, 1.f - p.boundaryWeightsEigen(i, 0), 1.f);
                         ++i;
                     }
                 }
@@ -374,28 +371,22 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
     for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end() && !stop; d = trav_vert_face_cage.next())
     {
         coordinates(index, i) = computeMVC2D(positionObject[vertex], d, cage, positionCage);
-        if(coordinates(index, i) <= FLT_EPSILON)
+        if(fabs(coordinates(index, i)) < FLT_EPSILON)
         {
-            if(index == 7)
-                CGoGNout << "I : " << i << " |" << positionCage[d] << "| coordinates : " << coordinates(index, i) << CGoGNendl;
             if(index_recherche != -1)
             {
                 //Si on est en mode recherche d'un autre sommet
-                if(cage->sameEdge(d,recherche))
+                PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
+                        / (positionCage[d]-positionCage[recherche]).norm2());
+
+                coordinates(index, index_recherche) = w;
+                coordinates(index, i) = 1-w;
+
+                stop = true;
+
+                for(int j = i+1; j < coordinates.cols(); ++j)
                 {
-                    //Si le sommet fait partie de la même arête que l'autre sommet recherché
-                    PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
-                            / (positionCage[d]-positionCage[recherche]).norm2());
-
-                    coordinates(index, index_recherche) = w;
-                    coordinates(index, i) = 1-w;
-
-                    stop = true;
-
-                    for(int j = i+1; j < coordinates.cols(); ++j)
-                    {
-                        coordinates(index, j) = 0.f;
-                    }
+                    coordinates(index, j) = 0.f;
                 }
             }
             else
@@ -480,7 +471,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
 
     bool stop = false;
 
-    if(isnan(sinBki) || isnan(sinBij) || fabs(sinBki)<FLT_EPSILON || fabs(sinBij)<FLT_EPSILON)
+    if(isnan(sinBki) || isnan(sinBij))
     {
         return 0.f;
     }
@@ -553,8 +544,8 @@ PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL& x
     if(h > FLT_EPSILON)
     {
         //return (1/2. * std::sin(M_PI*(x/h-1/2.)) + 1/2.);
-        //return -2*(x/h)*(x/h)*(x/h) + 3*(x/h)*(x/h);
-        return -8*(x/h)*(x/h)*(x/h)*(x/h)*(x/h) + 20*(x/h)*(x/h)*(x/h)*(x/h) - 18*(x/h)*(x/h)*(x/h) + 7*(x/h)*(x/h);
+        return -2*(x/h)*(x/h)*(x/h) + 3*(x/h)*(x/h);
+        //return -8*(x/h)*(x/h)*(x/h)*(x/h)*(x/h) + 20*(x/h)*(x/h)*(x/h)*(x/h) - 18*(x/h)*(x/h)*(x/h) + 7*(x/h)*(x/h);
     }
     else
     {
@@ -564,13 +555,8 @@ PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL& x
 
 bool Surface_DeformationCage_Plugin::isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max)
 {
-//    if(min[0]-(eps_x?FLT_EPSILON:0) <= point[0] && min[1]-(eps_y?FLT_EPSILON:0) <= point[1]
-//            && max[0]+(eps_x?FLT_EPSILON:0) >= point[0] && max[1]+(eps_y?FLT_EPSILON:0) >= point[1])
-//    {
-//        return true;
-//    }
-    if(point[0]+FLT_EPSILON*100 > min[0] && point[1]+FLT_EPSILON*100 > min[1]
-            && point[0]-FLT_EPSILON*100 < max[0] && point[1]-FLT_EPSILON*100 < max[1])
+    if(point[0]+FLT_EPSILON > min[0] && point[1]+FLT_EPSILON > min[1]
+            && point[0]-FLT_EPSILON < max[0] && point[1]-FLT_EPSILON < max[1])
     {
         return true;
     }
