@@ -43,6 +43,7 @@ bool Surface_DeformationCage_Plugin::enable()
     m_toDraw = false;
 
     connect(m_deformationCageAction, SIGNAL(triggered()), this, SLOT(openDeformationCageDialog()));
+    connect(m_deformationCageDialog->slider_boundary, SIGNAL(valueChanged(int)), this, SLOT(boundarySliderValueChanged(int)));
 
     connect(m_schnapps, SIGNAL(mapAdded(MapHandlerGen*)), this, SLOT(mapAdded(MapHandlerGen*)));
     connect(m_schnapps, SIGNAL(mapRemoved(MapHandlerGen*)), this, SLOT(mapRemoved(MapHandlerGen*)));
@@ -78,6 +79,22 @@ void Surface_DeformationCage_Plugin::drawMap(View *view, MapHandlerGen *map)
         map->draw(m_colorPerVertexShader, CGoGN::Algo::Render::GL2::TRIANGLES);
         glDisable(GL_POLYGON_OFFSET_FILL);
     }
+}
+
+void Surface_DeformationCage_Plugin::boundarySliderValueChanged(int value)
+{
+    MapHandlerGen* mhg_object = m_schnapps->getMap("Model");
+    MapHandler<PFP2>* mh_object = static_cast<MapHandler<PFP2>*>(mhg_object);
+    PFP2::MAP* object = mh_object->getMap();
+    MapHandlerGen* mhg_cage = m_schnapps->getMap("Cages");
+    MapHandler<PFP2>* mh_cage = static_cast<MapHandler<PFP2>*>(mhg_cage);
+    PFP2::MAP* cage = mh_cage->getMap();
+
+    PFP2::REAL h = value/100.f;
+
+    computeBoundaryWeights(cage, object, h, false);
+
+    m_deformationCageDialog->label_boundary->setText(QString::number(h, 'g', 2));
 }
 
 void Surface_DeformationCage_Plugin::mapAdded(MapHandlerGen *map)
@@ -297,6 +314,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                 p.cagePositionEigen.resize(cageNbV,3);
                 p.objectPositionEigen.resize(objectNbV,3);
                 p.boundaryWeightsEigen.resize(objectNbV,1);
+                p.smoothBoundaryWeightsEigen.resize(objectNbV,1);
 
                 for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
                 {
@@ -323,35 +341,51 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             }
         }
 
-        int j = 0;
-        for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
+        m_positionVBO->updateData(positionObject);
+
+        m_toDraw = true;
+
+        computeBoundaryWeights(cage, object);
+    }
+}
+
+void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP2::MAP* object, PFP2::REAL h, bool first)
+{
+    int i = 0, index_cage = -1;
+
+    TraversorV<PFP2::MAP> trav_vert_object(*object);
+    VertexAttribute<PFP2::VEC4> colorObject = object->getAttribute<PFP2::VEC4, VERTEX>("color");
+    VertexAttribute<Dart> indexCageObject = object->getAttribute<Dart, VERTEX>("indexCage");
+
+    TraversorF<PFP2::MAP> trav_face_cage(*cage);
+    for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
+    {
+        index_cage = cage->getEmbedding<FACE>(d);
+        if(h_cageParameters.contains(index_cage))
         {
-            index_cage = cage->getEmbedding<FACE>(d);
-            if(h_cageParameters.contains(index_cage))
+            CageParameters& p = h_cageParameters[index_cage];
+
+            i = 0;
+
+            //Calcul de la fonction de poids de bordure
+            for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
             {
-                CageParameters& p = h_cageParameters[index_cage];
-
-                i = 0;
-
-                //Calcul de la fonction de poids de bordure
-                for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
+                if(indexCageObject[dd] == p.beginningDart)
                 {
-                    if(indexCageObject[dd] == p.beginningDart)
+                    if(first)
                     {
-                        p.boundaryWeightsEigen(i, 0) = smoothingFunction(boundaryWeightFunction(p.coordinatesEigen, p.beginningDart, cage, i));
-                        colorObject[dd] = PFP2::VEC4(p.boundaryWeightsEigen(i, 0), 0.f, 1.f - p.boundaryWeightsEigen(i, 0), 1.f);
-                        ++i;
+                        p.boundaryWeightsEigen(i, 0) = boundaryWeightFunction(p.coordinatesEigen, p.beginningDart, cage, i);
                     }
+                    p.smoothBoundaryWeightsEigen(i, 0) = smoothingFunction(p.boundaryWeightsEigen(i, 0), h);
+                    colorObject[dd] = PFP2::VEC4(p.smoothBoundaryWeightsEigen(i, 0), 0.f, 1.f - p.smoothBoundaryWeightsEigen(i, 0), 1.f);
+                    ++i;
                 }
             }
-            ++j;
         }
-
-        m_positionVBO->updateData(positionObject);
-        m_colorVBO->updateData(colorObject);
-        m_toDraw = true;
-        m_schnapps->getSelectedView()->updateGL();
     }
+
+    m_colorVBO->updateData(colorObject);
+    m_schnapps->getSelectedView()->updateGL();
 }
 
 /*
@@ -401,7 +435,14 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
         }
         else
         {
-            sumMVC += coordinates(index, i);
+            if(index_recherche == -1)
+            {
+                sumMVC += coordinates(index, i);
+            }
+            else
+            {
+                coordinates(index, i) = 0.f;
+            }
         }
         ++i;
     }
@@ -466,18 +507,22 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     PFP2::REAL Bij = Geom::angle((vi-pt), (vj-pt));
     PFP2::REAL Bki = Geom::angle((vk-pt), (vi-pt));
 
-    PFP2::REAL sinBki = sin(Bki);
-    PFP2::REAL sinBij = sin(Bij);
-
-    bool stop = false;
-
-    if(isnan(sinBki) || isnan(sinBij))
+    if(isnan(Bki) || isnan(Bij))
     {
         return 0.f;
     }
 
+    PFP2::REAL sinBki = sin(Bki);
+    PFP2::REAL sinBij = sin(Bij);
+
+    if(fabs(sinBij) < FLT_EPSILON || fabs(sinBki) < FLT_EPSILON)
+    {
+        //return 0.f;
+    }
+
     PFP2::REAL tanBki = (1-cos(Bki))/sinBki;
     PFP2::REAL tanBij = (1-cos(Bij))/sinBij;
+
     res = (tanBki + tanBij) /((pt-vi).norm());
 
     return res;
@@ -541,16 +586,15 @@ PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL& x
     {
         return 1.f;
     }
+
     if(h > FLT_EPSILON)
     {
         //return (1/2. * std::sin(M_PI*(x/h-1/2.)) + 1/2.);
         return -2*(x/h)*(x/h)*(x/h) + 3*(x/h)*(x/h);
         //return -8*(x/h)*(x/h)*(x/h)*(x/h)*(x/h) + 20*(x/h)*(x/h)*(x/h)*(x/h) - 18*(x/h)*(x/h)*(x/h) + 7*(x/h)*(x/h);
     }
-    else
-    {
-        return 0.;
-    }
+
+    return 0.;
 }
 
 

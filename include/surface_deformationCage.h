@@ -19,7 +19,7 @@ namespace CGoGN
 namespace SCHNApps
 {
 
-#define M_H 0.7f
+#define M_H 1.f
 
 struct MapParameters
 {
@@ -46,6 +46,7 @@ struct CageParameters
     Eigen::Matrix<float, Eigen::Dynamic, 3> objectPositionEigen;
 
     Eigen::Matrix<float, Eigen::Dynamic, 1> boundaryWeightsEigen;
+    Eigen::Matrix<float, Eigen::Dynamic, 1> smoothBoundaryWeightsEigen;
 
     Dart beginningDart;
 
@@ -82,13 +83,8 @@ public:
 
     void computeMVCFromDialog();
 
-private slots:
-	void mapAdded(MapHandlerGen* map);
-	void mapRemoved(MapHandlerGen* map);
-
-    void attributeModified(unsigned int orbit, QString nameAttr);
-
-    void openDeformationCageDialog();
+private :
+    void computeBoundaryWeights(PFP2::MAP* cage, PFP2::MAP* object, PFP2::REAL h = M_H, bool first = true);
 
     void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                  const VertexAttribute<PFP2::VEC3>& positionCage,
@@ -106,6 +102,16 @@ private slots:
     PFP2::REAL vertexInfluenceFunction(PFP2::MAP* cage, const std::vector<Dart>& joinCage, Dart v);
 
     bool isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max);
+
+private slots:
+	void mapAdded(MapHandlerGen* map);
+	void mapRemoved(MapHandlerGen* map);
+
+    void attributeModified(unsigned int orbit, QString nameAttr);
+
+    void openDeformationCageDialog();
+
+    void boundarySliderValueChanged(int value);
 
 public slots:
     void computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
