@@ -335,6 +335,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                         p.objectPositionEigen(i, 1) = positionObject[dd][1];
                         p.objectPositionEigen(i, 2) = positionObject[dd][2];
                         computePointMVCFromCage(dd, positionObject, positionCage, p.coordinatesEigen, i, cage, p.beginningDart);
+                        computePointMVCFromJoinCage(dd, positionObject, positionCage, p.coordinatesEigen, i, cage, p.beginningDart);
                         ++i;
                     }
                 }
@@ -455,6 +456,48 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
             coordinates(index, i) /= sumMVC;
         }
     }
+}
+
+void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
+                                                                 const VertexAttribute<PFP2::VEC3>& positionCage,
+                                                                 Eigen::MatrixXf& coordinates, int index, PFP2::MAP* cage, Dart beginningDart)
+{
+    DartMarker markerJoinCage(*cage);
+    Dart startingDart, currentDart;
+
+    std::vector<Dart> joinCage;
+
+    Traversor2FFaE<PFP2::MAP> trav_ffae_cage(*cage, beginningDart);
+    for(Dart d = trav_ffae_cage.begin(); d != trav_ffae_cage.end(); d = trav_ffae_cage.next())
+    {
+        markerJoinCage.markOrbit<FACE>(d);
+    }
+
+    if(!markerJoinCage.isMarked(cage->phi2(beginningDart)))
+    {
+        //On se trouve sur le bord
+        startingDart = beginningDart;
+    }
+    else
+    {
+        startingDart = cage->phi<211>(beginningDart);
+    }
+
+    currentDart = cage->phi2(startingDart);
+
+    do
+    {
+        if(!markerJoinCage.isMarked())
+        {
+            //On est sur une autre face que celles de l'adjacence
+            joinCage.push_back(currentDart);
+            currentDart = cage->phi2(currentDart);
+            joinCage.push_back(currentDart);
+        }
+        joinCage.push_back(currentDart);
+        current Dart = cage->phi12(currentDart);
+    } while(startingDart != currentDart)
+
 }
 
 PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& positionCage)
@@ -595,27 +638,6 @@ PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL& x
     }
 
     return 0.;
-}
-
-
-PFP2::REAL Surface_DeformationCage_Plugin::vertexInfluenceFunction(PFP2::MAP* cage, const std::vector<Dart>& joinCage, Dart v)
-{
-    PFP2::REAL res(1.);
-    PFP2::REAL fCur(0.);
-
-    for(int i=0; i<joinCage.size(); ++i)
-    {
-        fCur = 0.;
-
-        for(int j=0; j<joinCage.size(); ++j)
-        {
-
-        }
-
-        res *= fCur;
-    }
-
-    return res;
 }
 
 bool Surface_DeformationCage_Plugin::isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max)
