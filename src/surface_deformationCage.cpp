@@ -336,12 +336,6 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             }
         }
 
-        TraversorV<PFP2::MAP> trav_test(*object);
-        for(Dart dd = trav_test.begin(); dd != trav_test.end(); dd = trav_test.next())
-        {
-            CGoGNout << "DD : " << dd << CGoGNendl;
-        }
-
         m_positionVBO->updateData(positionObject);
 
         m_toDraw = true;
