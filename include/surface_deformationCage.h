@@ -3,6 +3,8 @@
 
 #include "plugin_interaction.h"
 
+#include "Utils/colorMaps.h"
+
 #include <cmath>
 
 #include "dialog_deformationCage.h"
@@ -41,7 +43,7 @@ struct CageParameters
     MapHandlerGen* controlledObject;
     VertexAttribute<PFP2::VEC3> controlledObjectPosition;
 
-    Eigen::MatrixXf coordinatesEigen;
+    Eigen::MatrixXf coordinatesCageEigen;
     Eigen::Matrix<float, Eigen::Dynamic, 3> cagePositionEigen;
     Eigen::Matrix<float, Eigen::Dynamic, 3> objectPositionEigen;
 
@@ -51,6 +53,9 @@ struct CageParameters
     Dart beginningDart;
 
     PFP2::VEC3 min, max;
+
+    std::vector<Dart> joinCage;
+    Eigen::MatrixXf coordinatesJoinCageEigen;
 };
 
 class Surface_DeformationCage_Plugin : public PluginInteraction
@@ -91,17 +96,20 @@ private :
                                  Eigen::MatrixXf& coordinates, int index, PFP2::MAP* cage, Dart beginningDart);
     void computePointMVCFromJoinCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                      const VertexAttribute<PFP2::VEC3>& positionCage,
-                                     Eigen::MatrixXf& coordinates, int index, PFP2::MAP* cage, Dart beginningDart);
+                                     Eigen::MatrixXf& coordinates, int index, PFP2::MAP* cage, const std::vector<Dart>& joinCage);
     PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
                           const VertexAttribute<PFP2::VEC3>& positionCage);
     PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
                             const VertexAttribute<PFP2::VEC3>& position);
+    PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart vertex, Dart next, Dart previous, PFP2::MAP* cage,
+                            const VertexAttribute<PFP2::VEC3>& positionCage);
 
     /*
      *Fonctions de l'article
      */
     PFP2::REAL boundaryWeightFunction(const Eigen::MatrixXf& coordinates, Dart beginningDart, PFP2::MAP* cage, int index);
     PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
+    std::vector<Dart> findJoinCage(PFP2::MAP* cage, Dart beginningDart);
 
     bool isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max);
 
