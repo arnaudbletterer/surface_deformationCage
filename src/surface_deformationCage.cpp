@@ -165,8 +165,8 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                                 {
                                     p.controlledObjectPosition[dd][0] = p.objectPositionEigen(i, 0);
                                     p.controlledObjectPosition[dd][1] = p.objectPositionEigen(i, 1);
+                                    ++i;
                                 }
-                                ++i;
                             }
 
                             positionObject = p.controlledObjectPosition;
@@ -237,10 +237,6 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
         int i;
 
         TraversorV<PFP2::MAP> trav_vert_object(*object);
-
-//        object->enableQuickTraversal<VERTEX>();
-        cage->enableQuickTraversal<FACE>();
-        cage->enableQuickTraversal<VERTEX>();
 
         unsigned int cageNbV = 0;
         unsigned int objectNbV = 0;
@@ -402,7 +398,7 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
     Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, beginningDart);
     for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end() && !stop; d = trav_vert_face_cage.next())
     {
-        coordinates(index, i) = computeMVC2D(positionObject[vertex], d, cage, positionCage);
+        coordinates(index, i) = computeMVC2D(positionObject[vertex], d, cage->phi1(d), cage->phi_1(d), positionCage);
         if(fabs(coordinates(index, i)) < FLT_EPSILON)
         {
             if(index_recherche != -1)
@@ -461,7 +457,7 @@ void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, co
 {
     PFP2::REAL sumMVC(0.);
     Dart cur, prev, next;
-    for(int i=0; i<joinCage.size(); ++i)
+    for(unsigned int i=0; i<joinCage.size(); ++i)
     {
         cur = joinCage[i];
         next = joinCage[(i+1)%joinCage.size()];
@@ -473,11 +469,11 @@ void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, co
         {
             prev = joinCage[i-1];
         }
-        coordinates(index, i) = computeMVC2D(positionObject[vertex], cur, next, prev, cage, positionCage);
-        sumMVC += coordinates(index, i%joinCage.size());
+        coordinates(index, i) = computeMVC2D(positionObject[vertex], cur, next, prev, positionCage);
+        sumMVC += coordinates(index, i);
     }
 
-    for(int i=0; i<joinCage.size(); ++i)
+    for(unsigned int i=0; i<joinCage.size(); ++i)
     {
         coordinates(index, i) /= sumMVC;
     }
@@ -522,44 +518,12 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart
     return (1.0f/r)*sumU;
 }
 
-PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& positionCage)
-{
-    PFP2::REAL res;
-
-    PFP2::VEC3 vi = positionCage[vertex];
-    PFP2::VEC3 vj = positionCage[cage->phi1(vertex)];
-    PFP2::VEC3 vk = positionCage[cage->phi_1(vertex)];
-
-    PFP2::REAL Bij = Geom::angle((vi-pt), (vj-pt));
-    PFP2::REAL Bki = Geom::angle((vk-pt), (vi-pt));
-
-    if(isnan(Bki) || isnan(Bij))
-    {
-        return 0.f;
-    }
-
-    PFP2::REAL sinBki = sin(Bki);
-    PFP2::REAL sinBij = sin(Bij);
-
-    if(fabs(sinBij) < FLT_EPSILON || fabs(sinBki) < FLT_EPSILON)
-    {
-        //return 0.f;
-    }
-
-    PFP2::REAL tanBki = (1-cos(Bki))/sinBki;
-    PFP2::REAL tanBij = (1-cos(Bij))/sinBij;
-
-    res = (tanBki + tanBij) /((pt-vi).norm());
-
-    return res;
-}
-
-PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Dart vertex, Dart next, Dart previous, PFP2::MAP* cage,
+PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Dart current, Dart next, Dart previous,
                                                         const VertexAttribute<PFP2::VEC3>& positionCage)
 {
     PFP2::REAL res;
 
-    PFP2::VEC3 vi = positionCage[vertex];
+    PFP2::VEC3 vi = positionCage[current];
     PFP2::VEC3 vj = positionCage[next];
     PFP2::VEC3 vk = positionCage[previous];
 
@@ -576,7 +540,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
 
     if(fabs(sinBij) < FLT_EPSILON || fabs(sinBki) < FLT_EPSILON)
     {
-        //return 0.f;
+        return 0.f;
     }
 
     PFP2::REAL tanBki = (1-cos(Bki))/sinBki;
@@ -648,8 +612,8 @@ PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL& x
 
     if(h > FLT_EPSILON)
     {
-        //return (1/2. * std::sin(M_PI*(x/h-1/2.)) + 1/2.);
-        return -2*(x/h)*(x/h)*(x/h) + 3*(x/h)*(x/h);
+        return (1/2. * std::sin(M_PI*(x/h-1/2.)) + 1/2.);
+        //return -2*(x/h)*(x/h)*(x/h) + 3*(x/h)*(x/h);
         //return -8*(x/h)*(x/h)*(x/h)*(x/h)*(x/h) + 20*(x/h)*(x/h)*(x/h)*(x/h) - 18*(x/h)*(x/h)*(x/h) + 7*(x/h)*(x/h);
     }
 
@@ -706,8 +670,8 @@ std::vector<Dart> Surface_DeformationCage_Plugin::findJoinCage(PFP2::MAP* cage, 
 
 bool Surface_DeformationCage_Plugin::isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max)
 {
-    if(point[0]+FLT_EPSILON > min[0] && point[1]+FLT_EPSILON > min[1]
-            && point[0]-FLT_EPSILON < max[0] && point[1]-FLT_EPSILON < max[1])
+    if(point[0]+(FLT_EPSILON*100) > min[0] && point[1]+(FLT_EPSILON*100) > min[1]
+            && point[0]-(FLT_EPSILON*100) < max[0] && point[1]-(FLT_EPSILON*100) < max[1])
     {
         return true;
     }
