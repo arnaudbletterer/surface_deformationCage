@@ -157,7 +157,6 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                             }
 
                             i = 0;
-
                             TraversorV<PFP2::MAP> trav_vert_object(*object);
                             for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
                             {
@@ -265,7 +264,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 
                 p.beginningDart = d;
                 p.min = positionCage[p.beginningDart];
-                p.max = positionCage[p.beginningDart];
+                p.max = p.min;
 
                 p.joinCage = findJoinCage(cage, p.beginningDart);
 
@@ -407,24 +406,21 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
                 PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
                         / (positionCage[d]-positionCage[recherche]).norm2());
 
+
+                for(int j = 0; j < coordinates.cols(); ++j)
+                {
+                    coordinates(index, j) = 0.f;
+                }
+
                 coordinates(index, index_recherche) = w;
                 coordinates(index, i) = 1-w;
 
                 stop = true;
-
-                for(int j = i+1; j < coordinates.cols(); ++j)
-                {
-                    coordinates(index, j) = 0.f;
-                }
             }
             else
             {
                 recherche = d;
                 index_recherche = i;
-                for(int j = i-1; j >= 0; --j)
-                {
-                    coordinates(index, j) = 0.f;
-                }
             }
         }
         else
