@@ -145,6 +145,12 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                                 ++i;
                             }
 
+//                            for(unsigned int j=0; j<p.joinCage.size(); ++j)
+//                            {
+//                                p.cagePositionEigen(j, 0) = p.cagePosition[p.joinCage[j]][0];
+//                                p.cagePositionEigen(j, 1) = p.cagePosition[p.joinCage[j]][1];
+//                            }
+
                             p.objectPositionEigen = p.coordinatesCageEigen*p.cagePositionEigen;
 
                             object = mh_object->getMap();
@@ -300,11 +306,12 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                 }
 
                 p.coordinatesCageEigen.resize(objectNbV, cageNbV);
+                p.coordinatesJoinCageEigen.resize(objectNbV, p.joinCage.size());
+
                 p.cagePositionEigen.resize(cageNbV,2);
                 p.objectPositionEigen.resize(objectNbV,2);
                 p.boundaryWeightsEigen.resize(objectNbV,1);
                 p.smoothBoundaryWeightsEigen.resize(objectNbV,1);
-                p.coordinatesJoinCageEigen.resize(objectNbV, p.joinCage.size());
 
                 i = 0;
 
@@ -315,6 +322,12 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                     ++i;
                 }
 
+//                for(unsigned int j=0; j<p.joinCage.size(); ++j)
+//                {
+//                    p.cagePositionEigen(j, 0) = p.cagePosition[p.joinCage[j]][0];
+//                    p.cagePositionEigen(j, 1) = p.cagePosition[p.joinCage[j]][1];
+//                }
+
                 i = 0;
 
                 for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
@@ -324,10 +337,12 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                         p.objectPositionEigen(i, 0) = positionObject[dd][0];
                         p.objectPositionEigen(i, 1) = positionObject[dd][1];
                         computePointMVCFromCage(dd, positionObject, positionCage, p.coordinatesCageEigen, i, cage, p.beginningDart);
-                        computePointMVCFromJoinCage(dd, positionObject, positionCage, p.coordinatesJoinCageEigen, i, cage, p.joinCage);
+                        CGoGNout << "Dart : " << dd << CGoGNendl;
+                        //computePointMVCFromJoinCage(dd, positionObject, positionCage, p.coordinatesCageEigen, i, p.joinCage);
                         ++i;
                     }
                 }
+
             }
         }
 
@@ -389,51 +404,80 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
                                                              Eigen::MatrixXf& coordinates, int index, PFP2::MAP* cage, Dart beginningDart)
 {
     PFP2::REAL sumMVC(0.);
-    int i = 0;
-    Dart recherche;
-    int index_recherche = -1;
+    unsigned int i = 0;
+
     bool stop = false;
+    int id_recherche = -1;
+
+    Dart next, prev;
 
     Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, beginningDart);
     for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end() && !stop; d = trav_vert_face_cage.next())
     {
-        coordinates(index, i) = computeMVC2D(positionObject[vertex], d, cage->phi1(d), cage->phi_1(d), positionCage);
-        if(fabs(coordinates(index, i)) < FLT_EPSILON)
+        next = cage->phi1(d);
+        prev = cage->phi_1(d);
+        coordinates(index, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage);
+        if(fabs(999.f-coordinates(index, i)) < 100.f)
         {
-            if(index_recherche != -1)
+            //Le sommet de l'objet se situe sur le sommet courant de la cage
+            for(unsigned int j = 0; j<i; ++j)
             {
-                //Si on est en mode recherche d'un autre sommet
-                PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
-                        / (positionCage[d]-positionCage[recherche]).norm2());
-
-
-                for(int j = 0; j < coordinates.cols(); ++j)
+                //Mise a zéro de toutes les coordonnées
+                coordinates(index, j) = 0.f;
+            }
+            coordinates(index, i) = 1.f;    //Le sommet de l'objet est entièrement dépendant du sommet courant de la cage
+            stop = true;
+        }
+        else if(fabs(700.f-coordinates(index, i)) < 100.f)
+        {
+            if(id_recherche != -1)
+            {
+                //Le sommet de l'objet est sur [cur;next]
+                for(unsigned int j = 0; j<i; ++j)
                 {
+                    //Mise a zéro de toutes les coordonnées
                     coordinates(index, j) = 0.f;
                 }
 
-                coordinates(index, index_recherche) = w;
+                PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
+                                    / (positionCage[next]-positionCage[d]).norm2());
+
+                coordinates(index, id_recherche) = w;
                 coordinates(index, i) = 1-w;
 
                 stop = true;
             }
             else
             {
-                recherche = d;
-                index_recherche = i;
+                id_recherche = i;
             }
         }
-        else
+        else if(fabs(500.f-coordinates(index, i)) < 100.f)
         {
-            if(index_recherche == -1)
+            //Le sommet de l'objet est sur [cur;prev]
+            if(id_recherche != -1)
             {
-                sumMVC += coordinates(index, i);
+                for(unsigned int j = 0; j<i; ++j)
+                {
+                    //Mise a zéro de toutes les coordonnées
+                    coordinates(index, j) = 0.f;
+                }
+
+                PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
+                                    / (positionCage[prev]-positionCage[d]).norm2());
+
+                coordinates(index, id_recherche) = w;
+                coordinates(index, i) = 1-w;
+
+                stop = true;
             }
             else
             {
-                coordinates(index, i) = 0.f;
+                id_recherche = i;
             }
+
         }
+        sumMVC += coordinates(index, i);
         ++i;
     }
 
@@ -449,11 +493,14 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
 
 void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                                                  const VertexAttribute<PFP2::VEC3>& positionCage, Eigen::MatrixXf& coordinates,
-                                                                 int index, PFP2::MAP* cage, const std::vector<Dart>& joinCage)
+                                                                 int index, const std::vector<Dart>& joinCage)
 {
     PFP2::REAL sumMVC(0.);
     Dart cur, prev, next;
-    for(unsigned int i=0; i<joinCage.size(); ++i)
+
+    bool stop = false;
+
+    for(unsigned int i=0; i<joinCage.size() && !stop; ++i)
     {
         cur = joinCage[i];
         next = joinCage[(i+1)%joinCage.size()];
@@ -465,13 +512,79 @@ void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, co
         {
             prev = joinCage[i-1];
         }
+
         coordinates(index, i) = computeMVC2D(positionObject[vertex], cur, next, prev, positionCage);
-        sumMVC += coordinates(index, i);
+        if(fabs(999.f-coordinates(index, i)) < 100.f)
+        {
+            //Le sommet de l'objet se situe sur le sommet courant de la cage
+            for(unsigned int j = 0; j<joinCage.size(); ++j)
+            {
+                //Mise a zéro de toutes les coordonnées
+                coordinates(index, j) = 0.f;
+            }
+            coordinates(index, i) = 1.f;    //Le sommet de l'objet est entièrement dépendant du sommet courant de la cage
+            stop = true;
+        }
+        else if(fabs(700.f-coordinates(index, i)) < 100.f)
+        {
+            //Le sommet de l'objet est sur [cur;next]
+            for(unsigned int j = 0; j<joinCage.size(); ++j)
+            {
+                //Mise a zéro de toutes les coordonnées
+                coordinates(index, j) = 0.f;
+            }
+
+            PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[cur]).norm2()
+                                / (positionCage[next]-positionCage[cur]).norm2());
+
+            coordinates(index, (i+1)%joinCage.size()) = w;
+            coordinates(index, i) = 1-w;
+
+            stop = true;
+        }
+        else if(fabs(500.f-coordinates(index, i)) < 100.f)
+        {
+            //Le sommet de l'objet est sur [cur;prev]
+            for(unsigned int j = 0; j<joinCage.size(); ++j)
+            {
+                //Mise a zéro de toutes les coordonnées
+                coordinates(index, j) = 0.f;
+            }
+
+            PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[cur]).norm2()
+                                / (positionCage[prev]-positionCage[cur]).norm2());
+
+            if(i==0)
+            {
+                coordinates(index, joinCage.size()-1) = w;
+            }
+            else
+            {
+                coordinates(index, i-1) = w;
+            }
+            coordinates(index, i) = 1-w;
+
+            stop = true;
+
+        }
+        else
+        {
+            sumMVC += coordinates(index, i);
+        }
+    }
+
+    if(!stop)
+    {
+        for(unsigned int i=0; i<joinCage.size(); ++i)
+        {
+            coordinates(index, i) /= sumMVC;
+            //CGoGNout << coordinates(index, i) << CGoGNendl;
+        }
     }
 
     for(unsigned int i=0; i<joinCage.size(); ++i)
     {
-        coordinates(index, i) /= sumMVC;
+        CGoGNout << "Coordonnées : " << coordinates(index, i) << CGoGNendl;
     }
 }
 
@@ -526,17 +639,37 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     PFP2::REAL Bij = Geom::angle((vi-pt), (vj-pt));
     PFP2::REAL Bki = Geom::angle((vk-pt), (vi-pt));
 
-    if(isnan(Bki) || isnan(Bij))
+    if(isnan(Bij) && isnan(Bki))
     {
-        return 0.f;
+        //Le sommet de l'objet se trouve sur vi
+        return 999.f;
     }
 
-    PFP2::REAL sinBki = sin(Bki);
-    PFP2::REAL sinBij = sin(Bij);
-
-    if(fabs(sinBij) < FLT_EPSILON || fabs(sinBki) < FLT_EPSILON)
+    if(isnan(Bij))
     {
-        return 0.f;
+        //Le sommet se trouve sur [vi;vj]
+        return 700.f;
+    }
+
+    if(isnan(Bki))
+    {
+        //Le sommet se trouve sur [vi;vk]
+        return 500.f;
+    }
+
+    PFP2::REAL sinBij = sin(Bij);
+    PFP2::REAL sinBki = sin(Bki);
+
+    if(fabs(sinBij) < FLT_EPSILON)
+    {
+        //Le sommet se trouve sur [vi;vj]
+        return 700.f;
+    }
+
+    if(fabs(sinBki) < FLT_EPSILON)
+    {
+        //Le sommet se trouve sur [vi;vk]
+        return 500.f;
     }
 
     PFP2::REAL tanBki = (1-cos(Bki))/sinBki;
