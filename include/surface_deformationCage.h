@@ -44,8 +44,10 @@ struct CageParameters
     VertexAttribute<PFP2::VEC3> controlledObjectPosition;
 
     Eigen::MatrixXf coordinatesCageEigen;
-    Eigen::Matrix<float, Eigen::Dynamic, 3> cagePositionEigen;
-    Eigen::Matrix<float, Eigen::Dynamic, 3> objectPositionEigen;
+    Eigen::MatrixXf coordinatesJoinCageEigen;
+
+    Eigen::Matrix<float, Eigen::Dynamic, 2> cagePositionEigen;
+    Eigen::Matrix<float, Eigen::Dynamic, 2> objectPositionEigen;
 
     Eigen::Matrix<float, Eigen::Dynamic, 1> boundaryWeightsEigen;
     Eigen::Matrix<float, Eigen::Dynamic, 1> smoothBoundaryWeightsEigen;
@@ -55,7 +57,6 @@ struct CageParameters
     PFP2::VEC3 min, max;
 
     std::vector<Dart> joinCage;
-    Eigen::MatrixXf coordinatesJoinCageEigen;
 };
 
 class Surface_DeformationCage_Plugin : public PluginInteraction
