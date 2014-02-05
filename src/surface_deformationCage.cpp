@@ -309,6 +309,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                 p.coordinatesJoinCageEigen.resize(objectNbV, p.joinCage.size());
 
                 p.cagePositionEigen.resize(cageNbV,2);
+//                p.cagePositionEigen.resize(p.joinCage.size(),2);
                 p.objectPositionEigen.resize(objectNbV,2);
                 p.boundaryWeightsEigen.resize(objectNbV,1);
                 p.smoothBoundaryWeightsEigen.resize(objectNbV,1);
@@ -337,8 +338,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                         p.objectPositionEigen(i, 0) = positionObject[dd][0];
                         p.objectPositionEigen(i, 1) = positionObject[dd][1];
                         computePointMVCFromCage(dd, positionObject, positionCage, p.coordinatesCageEigen, i, cage, p.beginningDart);
-                        CGoGNout << "Dart : " << dd << CGoGNendl;
-                        //computePointMVCFromJoinCage(dd, positionObject, positionCage, p.coordinatesCageEigen, i, p.joinCage);
+//                        computePointMVCFromJoinCage(dd, positionObject, positionCage, p.coordinatesCageEigen, i, p.joinCage);
                         ++i;
                     }
                 }
@@ -578,13 +578,7 @@ void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, co
         for(unsigned int i=0; i<joinCage.size(); ++i)
         {
             coordinates(index, i) /= sumMVC;
-            //CGoGNout << coordinates(index, i) << CGoGNendl;
         }
-    }
-
-    for(unsigned int i=0; i<joinCage.size(); ++i)
-    {
-        CGoGNout << "Coordonnées : " << coordinates(index, i) << CGoGNendl;
     }
 }
 
@@ -799,8 +793,8 @@ std::vector<Dart> Surface_DeformationCage_Plugin::findJoinCage(PFP2::MAP* cage, 
 
 bool Surface_DeformationCage_Plugin::isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max)
 {
-    if(point[0]+(FLT_EPSILON*100) > min[0] && point[1]+(FLT_EPSILON*100) > min[1]
-            && point[0]-(FLT_EPSILON*100) < max[0] && point[1]-(FLT_EPSILON*100) < max[1])
+    if(point[0]+(FLT_EPSILON*10000) > min[0] && point[1]+(FLT_EPSILON*10000) > min[1]
+            && point[0]-(FLT_EPSILON*10000) < max[0] && point[1]-(FLT_EPSILON*10000) < max[1])
     {
         return true;
     }
