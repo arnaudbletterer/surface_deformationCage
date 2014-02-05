@@ -93,7 +93,7 @@ private :
 
     void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                  const VertexAttribute<PFP2::VEC3>& positionCage,
-                                 Eigen::MatrixXf& coordinates, int index, PFP2::MAP* cage, Dart beginningDart);
+                                 Eigen::MatrixXf& coordinates, int index, PFP2::MAP* cage, Dart beginningDart, int cageNbV);
     void computePointMVCFromJoinCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                      const VertexAttribute<PFP2::VEC3>& positionCage,
                                      Eigen::MatrixXf& coordinates, int index, const std::vector<Dart>& joinCage);
