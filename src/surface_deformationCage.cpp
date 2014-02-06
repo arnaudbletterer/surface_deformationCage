@@ -327,8 +327,8 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 
                 p.cagePositionEigen.resize(cageNbV,2);
                 p.objectPositionEigen.resize(objectNbV,2);
-                p.boundaryWeightsEigen.resize(objectNbV,1);
-                p.smoothBoundaryWeightsEigen.resize(objectNbV,1);
+                p.boundaryWeightsEigen.setZero(objectNbV,1);
+                p.smoothBoundaryWeightsEigen.setZero(objectNbV,1);
 
                 i = 0;
 
@@ -352,13 +352,12 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                         ++i;
                     }
                 }
-
-                if(p.beginningDart==8) {
-                    CGoGNout << p.objectPositionEigen << CGoGNendl;
-                    CGoGNout << "-----SUPER - CAGE-----" << CGoGNendl;
-                    CGoGNout << p.coordinatesCageEigen << CGoGNendl;
-                    CGoGNout << p.coordinatesJoinCageEigen << CGoGNendl;
-                }
+//                if(p.beginningDart==8)
+//                {
+//                    CGoGNout << p.objectPositionEigen << CGoGNendl;
+//                    CGoGNout << "-----SUPER - CAGE-----" << CGoGNendl;
+//                    CGoGNout << p.coordinatesCageEigen << CGoGNendl;
+//                }
             }
         }
 
@@ -401,11 +400,10 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
                     }
                     p.smoothBoundaryWeightsEigen(i, 0) = smoothingFunction(p.boundaryWeightsEigen(i, 0), h);
                     color = Utils::color_map_BCGYR(p.smoothBoundaryWeightsEigen(i, 0));
-                    colorObject[dd] = PFP2::VEC4(color[0], color[1], color[2], 1.f);
+                    colorObject[dd] = PFP2 ::VEC4(color[0], color[1], color[2], 1.f);
                     ++i;
                 }
             }
-
         }
     }
 
@@ -452,7 +450,7 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
                                 / (positionCage[next]-positionCage[d]).norm2());
 
             coordinates(index, (i+1)%cageNbV) = w;
-            coordinates(index, i) = 1-w;
+            coordinates(index, i) = 1.f-w;
 
             stop = true;
         }
@@ -472,7 +470,7 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
             {
                 coordinates(index, i-1) = w;
             }
-            coordinates(index, i) = 1-w;
+            coordinates(index, i) = 1.f-w;
 
             stop = true;
 
@@ -497,7 +495,7 @@ void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, co
                                                                  const VertexAttribute<PFP2::VEC3>& positionCage, Eigen::MatrixXf& coordinates,
                                                                  int index, PFP2::MAP* cage, const std::vector<Dart>& joinCage)
 {
-    PFP2::REAL sumMVC(0.), distance2_next, distance2_prev;
+    PFP2::REAL sumMVC(0.);
     Dart cur, prev, next;
 
     bool stop = false;
@@ -517,17 +515,9 @@ void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, co
 
         coordinates(index, i) = computeMVC2D(positionObject[vertex], cur, next, prev, positionCage);
 
-        distance2_prev = Geom::squaredDistanceSeg2Point(positionCage[cur], positionCage[cur]-positionCage[prev],
-                                                        (positionCage[cur]-positionCage[prev])*(positionCage[cur]-positionCage[prev]),
-                                                        positionObject[vertex]);
-        distance2_next = Geom::squaredDistanceSeg2Point(positionCage[cur], positionCage[cur]-positionCage[next],
-                                                        (positionCage[cur]-positionCage[next])*(positionCage[cur]-positionCage[next]),
-                                                        positionObject[vertex]);
-
         if(fabs(999999.f-coordinates(index, i)) < 100000.f)
         {
-            //Le sommet de l'objet se situe sur le sommet courant de la cage
-            CGoGNout << "Sur un sommet" << CGoGNendl;
+            //Le sommet de l'objet se situe sur le sommet courant de la cages
             coordinates.row(index).setZero();
 
             coordinates(index, i) = 1.f;    //Le sommet de l'objet est entièrement dépendant du sommet courant de la cage
@@ -764,18 +754,29 @@ std::vector<Dart> Surface_DeformationCage_Plugin::findJoinCage(PFP2::MAP* cage, 
 
     do
     {
-        Traversor2FFaV<PFP2::MAP> trav_ffav_cage(*cage, startingDart);
-        for(Dart d = trav_ffav_cage.begin(); d != trav_ffav_cage.end(); d = trav_ffav_cage.next())
+//        Traversor2FFaV<PFP2::MAP> trav_ffav_cage(*cage, startingDart);
+//        for(Dart d = trav_ffav_cage.begin(); d != trav_ffav_cage.end(); d = trav_ffav_cage.next())
+//        {
+//            if(!cage->isBoundaryMarked2(d) && !markerJoinCage.isMarked(d))
+//            {
+//                CGoGNout << "Cage " << cage->getEmbedding<FACE>(d) << " marquée" << CGoGNendl;
+//                markerJoinCage.markOrbit<FACE>(d);
+//                ++i;
+//            }
+//        }
+        currentDart = startingDart;
+        do
         {
-            if(!cage->isBoundaryMarked2(d))
+            if(!cage->isBoundaryMarked2(currentDart) && !markerJoinCage.isMarked(currentDart))
             {
-                markerJoinCage.markOrbit<FACE>(d);
+                markerJoinCage.markOrbit<FACE>(currentDart);
             }
-        }
+            currentDart = cage->phi<21>(currentDart);
+        } while(currentDart != startingDart);
         startingDart = cage->phi1(startingDart);
     } while(startingDart!=beginningDart);
 
-    if(!markerJoinCage.isMarked(cage->phi2(beginningDart)))
+    if(!markerJoinCage.isMarked(cage->phi2(startingDart)))
     {
         //On se trouve sur le bord
         startingDart = beginningDart;
@@ -783,11 +784,11 @@ std::vector<Dart> Surface_DeformationCage_Plugin::findJoinCage(PFP2::MAP* cage, 
     else
     {
         //On cherche un brin sur le bord
-        startingDart = cage->phi2(beginningDart);
-        while(markerJoinCage.isMarked(cage->phi2(startingDart)))
+        startingDart = cage->phi2(startingDart);
+        do
         {
             startingDart = cage->phi1(startingDart);
-        }
+        } while(markerJoinCage.isMarked(cage->phi2(startingDart)));
     }
 
     currentDart = cage->phi2(startingDart);
