@@ -171,9 +171,9 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                                         pos_x += p.coordinatesCageEigen(i,j)*p.cagePosition[ddd][0];
                                         pos_y += p.coordinatesCageEigen(i,j)*p.cagePosition[ddd][1];
                                         ++j;
-                                    }/*
+                                    }
                                     p.objectPositionEigen(i,0) = p.smoothBoundaryWeightsEigen(i) * pos_x;
-                                    p.objectPositionEigen(i,1) = p.smoothBoundaryWeightsEigen(i) * pos_y;*/
+                                    p.objectPositionEigen(i,1) = p.smoothBoundaryWeightsEigen(i) * pos_y;
 
                                     pos_x = 0.f;
                                     pos_y = 0.f;
@@ -182,8 +182,8 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                                         pos_x += p.coordinatesJoinCageEigen(i,j)*p.cagePosition[p.joinCage[j]][0];
                                         pos_y += p.coordinatesJoinCageEigen(i,j)*p.cagePosition[p.joinCage[j]][1];
                                     }
-                                    p.objectPositionEigen(i,0) = /*(1.f-p.smoothBoundaryWeightsEigen(i)) **/ pos_x;
-                                    p.objectPositionEigen(i,1) = /*(1.f-p.smoothBoundaryWeightsEigen(i)) * */pos_y;
+                                    p.objectPositionEigen(i,0) += (1.f-p.smoothBoundaryWeightsEigen(i)) * pos_x;
+                                    p.objectPositionEigen(i,1) += (1.f-p.smoothBoundaryWeightsEigen(i)) * pos_y;
 
                                     p.controlledObjectPosition[dd][0] = p.objectPositionEigen(i, 0);
                                     p.controlledObjectPosition[dd][1] = p.objectPositionEigen(i, 1);
@@ -526,6 +526,62 @@ void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, co
 
             stop = true;
         }
+        else if(fabs(800000.f-coordinates(index, i)) < 100000.f)
+        {
+            PFP2::REAL distance_next = Geom::squaredDistanceSeg2Point(positionCage[cur], positionCage[cur]-positionCage[next],
+                                                                      (positionCage[cur]-positionCage[next])*(positionCage[cur]-positionCage[next]),
+                                                                      positionObject[vertex]);
+            PFP2::REAL distance_prev = Geom::squaredDistanceSeg2Point(positionCage[cur], positionCage[cur]-positionCage[prev],
+                                                                      (positionCage[cur]-positionCage[prev])*(positionCage[cur]-positionCage[prev]),
+                                                                      positionObject[vertex]);
+
+            coordinates.row(index).setZero();
+
+            if(distance_next>distance_prev)
+            {
+
+                PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[cur]).norm2()
+                                    / (positionCage[next]-positionCage[cur]).norm2());
+
+                if(w <= 1.f)
+                {
+                    //Si le sommet de l'objet est bien sur [cur;next]
+                    coordinates(index, (i+1)%joinCage.size()) = w;
+                    coordinates(index, i) = 1.f-w;
+
+                    stop = true;
+                }
+                else
+                {
+                    coordinates(index, i) = 0.f;
+                }
+            }
+            else
+            {
+                PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[cur]).norm2()
+                                    / (positionCage[prev]-positionCage[cur]).norm2());
+
+                if(w <= 1.f)
+                {
+                    //Si le sommet de l'objet est bien sur [cur;prev]
+                    if(i==0)
+                    {
+                        coordinates(index, joinCage.size()-1) = w;
+                    }
+                    else
+                    {
+                        coordinates(index, i-1) = w;
+                    }
+                    coordinates(index, i) = 1.f-w;
+
+                    stop = true;
+                }
+                else
+                {
+                    coordinates(index, i) = 0.f;
+                }
+            }
+        }
         else if(fabs(700000.f-coordinates(index, i)) < 100000.f)
         {
             //Le sommet de l'objet est sur [cur;next]
@@ -536,7 +592,6 @@ void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, co
 
             if(w <= 1.f)
             {
-                CGoGNout << "700 : " << w << CGoGNendl;
                 //Si le sommet de l'objet est bien sur [cur;next]
                 coordinates(index, (i+1)%joinCage.size()) = w;
                 coordinates(index, i) = 1.f-w;
@@ -545,7 +600,6 @@ void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, co
             }
             else
             {
-                CGoGNout << "else 700" << CGoGNendl;
                 coordinates(index, i) = 0.f;
             }
         }
@@ -559,7 +613,6 @@ void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, co
 
             if(w <= 1.f)
             {
-                CGoGNout << "500 : "<<  w << CGoGNendl;
                 //Si le sommet de l'objet est bien sur [cur;prev]
                 if(i==0)
                 {
@@ -665,6 +718,11 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     PFP2::REAL sinBij = sin(Bij);
     PFP2::REAL sinBki = sin(Bki);
 
+    if(fabs(sinBij) < FLT_EPSILON && fabs(sinBki) < FLT_EPSILON)
+    {
+        return 800000.f;
+    }
+
     if(fabs(sinBij) < FLT_EPSILON)
     {
         //Le sommet se trouve sur [vi;vj]
@@ -765,36 +823,29 @@ std::vector<Dart> Surface_DeformationCage_Plugin::findJoinCage(PFP2::MAP* cage, 
 
     startingDart = beginningDart;
 
-    int i = 0;
+//    Traversor2FFaV<PFP2::MAP> trav_ffav_cage(*cage, startingDart);
+//    for(Dart d = trav_ffav_cage.begin(); d != trav_ffav_cage.end(); d = trav_ffav_cage.next())
+//    {
+//        if(!cage->isBoundaryMarked2(d))
+//        {
+//            markerJoinCage.markOrbit<FACE>(d);
+//        }
+//    }
 
     do
     {
-        Traversor2FFaV<PFP2::MAP> trav_ffav_cage(*cage, startingDart);
-        for(Dart d = trav_ffav_cage.begin(); d != trav_ffav_cage.end(); d = trav_ffav_cage.next())
+        currentDart = startingDart;
+        do
         {
-            if(!cage->isBoundaryMarked2(d) && !markerJoinCage.isMarked(d))
+            if(!cage->isBoundaryMarked2(currentDart) && !markerJoinCage.isMarked(currentDart))
             {
-                //CGoGNout << "Cage " << cage->getEmbedding<FACE>(d) << " marquée" << CGoGNendl;
-                markerJoinCage.markOrbit<FACE>(d);
-                ++i;
+                markerJoinCage.markOrbit<FACE>(currentDart);
             }
-        }
-
-//        currentDart = startingDart;
-//        do
-//        {
-//            if(!cage->isBoundaryMarked2(currentDart) && !markerJoinCage.isMarked(currentDart))
-//            {
-//                markerJoinCage.markOrbit<FACE>(currentDart);
-//                ++i;
-//            }
-//            currentDart = cage->phi<21>(currentDart);
-//        } while(currentDart != startingDart);
+            currentDart = cage->phi<21>(currentDart);
+        } while(currentDart != startingDart);
 
         startingDart = cage->phi1(startingDart);
     } while(startingDart!=beginningDart);
-
-    CGoGNout << "cage adjacentes" <<  i << CGoGNendl;
 
     if(!markerJoinCage.isMarked(cage->phi2(startingDart)))
     {
