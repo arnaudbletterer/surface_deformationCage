@@ -352,12 +352,6 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                         ++i;
                     }
                 }
-//                if(p.beginningDart==8)
-//                {
-                    CGoGNout << p.objectPositionEigen << CGoGNendl;
-                    CGoGNout << "-----SUPER - CAGE-----" << CGoGNendl;
-                    CGoGNout << p.coordinatesJoinCageEigen << CGoGNendl;
-//                }
             }
         }
 
@@ -718,18 +712,18 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     PFP2::REAL sinBij = sin(Bij);
     PFP2::REAL sinBki = sin(Bki);
 
-    if(fabs(sinBij) < FLT_EPSILON && fabs(sinBki) < FLT_EPSILON)
+    if(fabs(sinBij) < FLT_EPSILON*10000 && fabs(sinBki) < FLT_EPSILON*10000)
     {
         return 800000.f;
     }
 
-    if(fabs(sinBij) < FLT_EPSILON)
+    if(fabs(sinBij) < FLT_EPSILON*10000)
     {
         //Le sommet se trouve sur [vi;vj]
         return 700000.f;
     }
 
-    if(fabs(sinBki) < FLT_EPSILON)
+    if(fabs(sinBki) < FLT_EPSILON*10000)
     {
         //Le sommet se trouve sur [vi;vk]
         return 500000.f;
@@ -747,49 +741,46 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::M
 {
     PFP2::REAL res(1.), sumCur(0.);
 
-    DartMarker marker(*cage);
     Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, beginningDart);
 
-    int currentFace = -1;
-    Dart d2;
     int i = 0;
+    int currentFace = -1;
+
+    DartMarker marker(*cage);
+
+    Dart d2;
 
     do
     {
-        currentFace = -1;
         sumCur = 0.;
-        i = 0;
+        currentFace = -1;
 
-        //On recherche les sommets appartenant au prochain bord
         for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end(); d = trav_vert_face_cage.next())
         {
             if(cage->vertexDegree(d) > 2)
             {
-                //Si le sommet fait partie de plus d'une cage
-                d2 = cage->phi2(d);
+                //Si le sommet est incident à plus d'une face
                 if(currentFace == -1)
                 {
-                    if(!marker.isMarked(d2))
+                    //On va réaliser les calculs pour une nouvelle bordure
+                    d2 = cage->phi2(d);
+                    if(!cage->isBoundaryMarked2(d2))
                     {
-                        //Si la face n'a pas encore été traitée
-                        currentFace = cage->getEmbedding<FACE>(d2);
-                        sumCur += coordinates(index, i);
-                        marker.markOrbit<FACE>(d2);
-                    }
-                }
-                else
-                {
-                    if(currentFace == cage->getEmbedding<FACE>(d2))
-                    {
-                        sumCur += coordinates(index, i);
+                        if(!marker.isMarked(d2))
+                        {
+                            //Si la bordure courante n'a pas encore été considérée
+                            currentFace = cage->getEmbedding<FACE>(d2);
+                            marker.markOrbit<FACE>(d2);
+                            sumCur += coordinates(index, i);
+                        }
                     }
                 }
             }
+
             ++i;
         }
 
-        res *= 1-sumCur;
-
+        res *= 1 - sumCur;
     } while(currentFace != -1);
 
     return res;
@@ -802,7 +793,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL& x
         return 1.f;
     }
 
-    if(h > FLT_EPSILON)
+    if(h > FLT_EPSILON*10000)
     {
         return (1/2. * std::sin(M_PI*(x/h-1/2.)) + 1/2.);
         //return -2*(x/h)*(x/h)*(x/h) + 3*(x/h)*(x/h);
@@ -823,29 +814,14 @@ std::vector<Dart> Surface_DeformationCage_Plugin::findJoinCage(PFP2::MAP* cage, 
 
     startingDart = beginningDart;
 
-//    Traversor2FFaV<PFP2::MAP> trav_ffav_cage(*cage, startingDart);
-//    for(Dart d = trav_ffav_cage.begin(); d != trav_ffav_cage.end(); d = trav_ffav_cage.next())
-//    {
-//        if(!cage->isBoundaryMarked2(d))
-//        {
-//            markerJoinCage.markOrbit<FACE>(d);
-//        }
-//    }
-
-    do
+    Traversor2FFaV<PFP2::MAP> trav_ffav_cage(*cage, startingDart);
+    for(Dart d = trav_ffav_cage.begin(); d != trav_ffav_cage.end(); d = trav_ffav_cage.next())
     {
-        currentDart = startingDart;
-        do
+        if(!cage->isBoundaryMarked2(d))
         {
-            if(!cage->isBoundaryMarked2(currentDart) && !markerJoinCage.isMarked(currentDart))
-            {
-                markerJoinCage.markOrbit<FACE>(currentDart);
-            }
-            currentDart = cage->phi<21>(currentDart);
-        } while(currentDart != startingDart);
-
-        startingDart = cage->phi1(startingDart);
-    } while(startingDart!=beginningDart);
+            markerJoinCage.markOrbit<FACE>(d);
+        }
+    }
 
     if(!markerJoinCage.isMarked(cage->phi2(startingDart)))
     {
