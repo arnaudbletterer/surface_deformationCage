@@ -171,9 +171,9 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                                         pos_x += p.coordinatesCageEigen(i,j)*p.cagePosition[ddd][0];
                                         pos_y += p.coordinatesCageEigen(i,j)*p.cagePosition[ddd][1];
                                         ++j;
-                                    }
+                                    }/*
                                     p.objectPositionEigen(i,0) = p.smoothBoundaryWeightsEigen(i) * pos_x;
-                                    p.objectPositionEigen(i,1) = p.smoothBoundaryWeightsEigen(i) * pos_y;
+                                    p.objectPositionEigen(i,1) = p.smoothBoundaryWeightsEigen(i) * pos_y;*/
 
                                     pos_x = 0.f;
                                     pos_y = 0.f;
@@ -182,8 +182,8 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                                         pos_x += p.coordinatesJoinCageEigen(i,j)*p.cagePosition[p.joinCage[j]][0];
                                         pos_y += p.coordinatesJoinCageEigen(i,j)*p.cagePosition[p.joinCage[j]][1];
                                     }
-                                    p.objectPositionEigen(i,0) += (1.f-p.smoothBoundaryWeightsEigen(i)) * pos_x;
-                                    p.objectPositionEigen(i,1) += (1.f-p.smoothBoundaryWeightsEigen(i)) * pos_y;
+                                    p.objectPositionEigen(i,0) = /*(1.f-p.smoothBoundaryWeightsEigen(i)) **/ pos_x;
+                                    p.objectPositionEigen(i,1) = /*(1.f-p.smoothBoundaryWeightsEigen(i)) * */pos_y;
 
                                     p.controlledObjectPosition[dd][0] = p.objectPositionEigen(i, 0);
                                     p.controlledObjectPosition[dd][1] = p.objectPositionEigen(i, 1);
@@ -354,9 +354,9 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                 }
 //                if(p.beginningDart==8)
 //                {
-//                    CGoGNout << p.objectPositionEigen << CGoGNendl;
-//                    CGoGNout << "-----SUPER - CAGE-----" << CGoGNendl;
-//                    CGoGNout << p.coordinatesCageEigen << CGoGNendl;
+                    CGoGNout << p.objectPositionEigen << CGoGNendl;
+                    CGoGNout << "-----SUPER - CAGE-----" << CGoGNendl;
+                    CGoGNout << p.coordinatesJoinCageEigen << CGoGNendl;
 //                }
             }
         }
@@ -449,10 +449,13 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
             PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
                                 / (positionCage[next]-positionCage[d]).norm2());
 
-            coordinates(index, (i+1)%cageNbV) = w;
-            coordinates(index, i) = 1.f-w;
+            if(1.f-w > FLT_EPSILON)
+            {
+                coordinates(index, (i+1)%cageNbV) = w;
+                coordinates(index, i) = 1.f-w;
 
-            stop = true;
+                stop = true;
+            }
         }
         else if(fabs(500000.f-coordinates(index, i)) < 100000.f)
         {
@@ -462,23 +465,22 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
             PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
                                 / (positionCage[prev]-positionCage[d]).norm2());
 
-            if(i==0)
+            if(1.f-w > FLT_EPSILON)
             {
-                coordinates(index, cageNbV-1) = w;
-            }
-            else
-            {
-                coordinates(index, i-1) = w;
-            }
-            coordinates(index, i) = 1.f-w;
+                if(i==0)
+                {
+                    coordinates(index, cageNbV-1) = w;
+                }
+                else
+                {
+                    coordinates(index, i-1) = w;
+                }
+                coordinates(index, i) = 1.f-w;
 
-            stop = true;
-
+                stop = true;
+            }
         }
-        else
-        {
-            sumMVC += coordinates(index, i);
-        }
+        sumMVC += coordinates(index, i);
         ++i;
     }
 
@@ -532,13 +534,19 @@ void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, co
             PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[cur]).norm2()
                                 / (positionCage[next]-positionCage[cur]).norm2());
 
-            if(w-1.f < FLT_EPSILON)
+            if(w <= 1.f)
             {
-                //Si le somemt de l'objet est bien sur [cur;next]
+                CGoGNout << "700 : " << w << CGoGNendl;
+                //Si le sommet de l'objet est bien sur [cur;next]
                 coordinates(index, (i+1)%joinCage.size()) = w;
                 coordinates(index, i) = 1.f-w;
 
                 stop = true;
+            }
+            else
+            {
+                CGoGNout << "else 700" << CGoGNendl;
+                coordinates(index, i) = 0.f;
             }
         }
         else if(fabs(500000.f-coordinates(index, i)) < 100000.f)
@@ -549,9 +557,10 @@ void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, co
             PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[cur]).norm2()
                                 / (positionCage[prev]-positionCage[cur]).norm2());
 
-            if(w-1.f < FLT_EPSILON)
+            if(w <= 1.f)
             {
-                //Si le somemt de l'objet est bien sur [cur;prev]
+                CGoGNout << "500 : "<<  w << CGoGNendl;
+                //Si le sommet de l'objet est bien sur [cur;prev]
                 if(i==0)
                 {
                     coordinates(index, joinCage.size()-1) = w;
@@ -563,6 +572,10 @@ void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, co
                 coordinates(index, i) = 1.f-w;
 
                 stop = true;
+            }
+            else
+            {
+                coordinates(index, i) = 0.f;
             }
         }
         else
@@ -752,29 +765,36 @@ std::vector<Dart> Surface_DeformationCage_Plugin::findJoinCage(PFP2::MAP* cage, 
 
     startingDart = beginningDart;
 
+    int i = 0;
+
     do
     {
-//        Traversor2FFaV<PFP2::MAP> trav_ffav_cage(*cage, startingDart);
-//        for(Dart d = trav_ffav_cage.begin(); d != trav_ffav_cage.end(); d = trav_ffav_cage.next())
+        Traversor2FFaV<PFP2::MAP> trav_ffav_cage(*cage, startingDart);
+        for(Dart d = trav_ffav_cage.begin(); d != trav_ffav_cage.end(); d = trav_ffav_cage.next())
+        {
+            if(!cage->isBoundaryMarked2(d) && !markerJoinCage.isMarked(d))
+            {
+                //CGoGNout << "Cage " << cage->getEmbedding<FACE>(d) << " marquée" << CGoGNendl;
+                markerJoinCage.markOrbit<FACE>(d);
+                ++i;
+            }
+        }
+
+//        currentDart = startingDart;
+//        do
 //        {
-//            if(!cage->isBoundaryMarked2(d) && !markerJoinCage.isMarked(d))
+//            if(!cage->isBoundaryMarked2(currentDart) && !markerJoinCage.isMarked(currentDart))
 //            {
-//                CGoGNout << "Cage " << cage->getEmbedding<FACE>(d) << " marquée" << CGoGNendl;
-//                markerJoinCage.markOrbit<FACE>(d);
+//                markerJoinCage.markOrbit<FACE>(currentDart);
 //                ++i;
 //            }
-//        }
-        currentDart = startingDart;
-        do
-        {
-            if(!cage->isBoundaryMarked2(currentDart) && !markerJoinCage.isMarked(currentDart))
-            {
-                markerJoinCage.markOrbit<FACE>(currentDart);
-            }
-            currentDart = cage->phi<21>(currentDart);
-        } while(currentDart != startingDart);
+//            currentDart = cage->phi<21>(currentDart);
+//        } while(currentDart != startingDart);
+
         startingDart = cage->phi1(startingDart);
     } while(startingDart!=beginningDart);
+
+    CGoGNout << "cage adjacentes" <<  i << CGoGNendl;
 
     if(!markerJoinCage.isMarked(cage->phi2(startingDart)))
     {
