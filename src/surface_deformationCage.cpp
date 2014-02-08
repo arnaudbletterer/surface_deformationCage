@@ -837,18 +837,33 @@ std::vector<Dart> Surface_DeformationCage_Plugin::findJoinCage(PFP2::MAP* cage, 
 
     markerJoinCage.markOrbit<FACE>(beginningDart);
 
+//    Traversor2FFaV<PFP2::MAP> trav_ffav_cage(*cage, beginningDart);
+//    for(Dart d = trav_ffav_cage.begin(); d != trav_ffav_cage.end(); d = trav_ffav_cage.next())
+//    {
+//        if(!cage->isBoundaryMarked2(d))
+//        {
+//            CGoGNout << "face marquée" << CGoGNendl;
+//            markerJoinCage.markOrbit<FACE>(d);
+//        }
+//    }
+
     startingDart = beginningDart;
-
-    Traversor2FFaV<PFP2::MAP> trav_ffav_cage(*cage, startingDart);
-    for(Dart d = trav_ffav_cage.begin(); d != trav_ffav_cage.end(); d = trav_ffav_cage.next())
+    do
     {
-        if(!cage->isBoundaryMarked2(d))
+        currentDart = startingDart;
+        do
         {
-            markerJoinCage.markOrbit<FACE>(d);
-        }
-    }
+            if(!cage->isBoundaryMarked2(currentDart))
+            {
+                markerJoinCage.markOrbit<FACE>(currentDart);
+            }
+            currentDart = cage->phi<21>(currentDart);
+        } while(currentDart != startingDart);
 
-    if(!markerJoinCage.isMarked(cage->phi2(startingDart)))
+        startingDart = cage->phi1(startingDart);
+    } while(startingDart != beginningDart);
+
+    if(!markerJoinCage.isMarked(cage->phi2(beginningDart)))
     {
         //On se trouve sur le bord
         startingDart = beginningDart;
@@ -856,7 +871,7 @@ std::vector<Dart> Surface_DeformationCage_Plugin::findJoinCage(PFP2::MAP* cage, 
     else
     {
         //On cherche un brin sur le bord
-        startingDart = cage->phi2(startingDart);
+        startingDart = cage->phi2(beginningDart);
         do
         {
             startingDart = cage->phi1(startingDart);
@@ -874,6 +889,8 @@ std::vector<Dart> Surface_DeformationCage_Plugin::findJoinCage(PFP2::MAP* cage, 
         }
         currentDart = cage->phi<12>(currentDart);
     } while(currentDart != cage->phi2(startingDart));
+
+    CGoGNout << "Size : " << joinCage.size() << CGoGNendl;
 
     return joinCage;
 }
