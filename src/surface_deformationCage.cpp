@@ -744,44 +744,69 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::M
     Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, beginningDart);
 
     int i = 0;
-    int currentFace = -1;
 
     DartMarker marker(*cage);
 
     Dart d2;
+    int researchedVertex = -1;
+
+    bool stop = false, restart = false;
 
     do
     {
         sumCur = 0.;
-        currentFace = -1;
+        stop = false;
+        restart = false;
+        i = 0;
+        researchedVertex = -1;
 
-        for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end(); d = trav_vert_face_cage.next())
+        for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end() && !stop;)
         {
             if(cage->vertexDegree(d) > 2)
             {
                 //Si le sommet est incident à plus d'une face
-                if(currentFace == -1)
+                d2 = cage->phi2(d);
+                if(researchedVertex == -1)
                 {
-                    //On va réaliser les calculs pour une nouvelle bordure
-                    d2 = cage->phi2(d);
+                    //On cherche une autre bordure commune
                     if(!cage->isBoundaryMarked2(d2))
                     {
                         if(!marker.isMarked(d2))
                         {
                             //Si la bordure courante n'a pas encore été considérée
-                            currentFace = cage->getEmbedding<FACE>(d2);
+                            researchedVertex = cage->getEmbedding<VERTEX>(d2);
                             marker.markOrbit<FACE>(d2);
                             sumCur += coordinates(index, i);
+                            restart = true;
                         }
+                    }
+                }
+                else
+                {
+                    if(cage->getEmbedding<VERTEX>(d) == researchedVertex)
+                    {
+                        //On a trouvé le deuxième sommet composant l'arête
+                        sumCur += coordinates(index, i);
+                        stop = true;
                     }
                 }
             }
 
-            ++i;
+            if(restart)
+            {
+                d = trav_vert_face_cage.begin();
+                restart = false;
+                i = 0;
+            }
+            else
+            {
+                d = trav_vert_face_cage.next();
+                ++i;
+            }
         }
 
         res *= 1 - sumCur;
-    } while(currentFace != -1);
+    } while(researchedVertex != -1);
 
     return res;
 }
