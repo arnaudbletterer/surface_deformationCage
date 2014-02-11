@@ -67,10 +67,10 @@ void Surface_DeformationCage_Plugin::disable()
 
 void Surface_DeformationCage_Plugin::drawMap(View *view, MapHandlerGen *map)
 {
-    if(m_toDraw)
+    if(m_toDraw && m_schnapps->getSelectedView() == view)
     {
         //If VBO are initialized
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glPolygonMode(GL_FRONT, GL_FILL);
         glEnable(GL_LIGHTING);
         glEnable(GL_POLYGON_OFFSET_FILL);
         m_colorPerVertexShader->setAttributePosition(m_positionVBO);
