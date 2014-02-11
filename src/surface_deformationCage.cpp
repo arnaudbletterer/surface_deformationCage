@@ -139,13 +139,6 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                             int i = 0;
                             Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, p.beginningDart);
 
-                            for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
-                            {
-                                p.cagePositionEigen(i, 0) = p.cagePosition[dd][0];
-                                p.cagePositionEigen(i, 1) = p.cagePosition[dd][1];
-                                ++i;
-                            }
-
                             object = mh_object->getMap();
 
                             VertexAttribute<Dart> indexCageObject = object->getAttribute<Dart, VERTEX>("indexCage");
@@ -172,8 +165,8 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                                         pos_y += p.coordinatesCageEigen(i,j)*p.cagePosition[ddd][1];
                                         ++j;
                                     }
-                                    p.objectPositionEigen(i,0) = p.smoothBoundaryWeightsEigen(i) * pos_x;
-                                    p.objectPositionEigen(i,1) = p.smoothBoundaryWeightsEigen(i) * pos_y;
+                                    p.controlledObjectPosition[dd][0] = p.smoothBoundaryWeightsEigen(i) * pos_x;
+                                    p.controlledObjectPosition[dd][1] = p.smoothBoundaryWeightsEigen(i) * pos_y;
 
                                     pos_x = 0.f;
                                     pos_y = 0.f;
@@ -182,11 +175,9 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                                         pos_x += p.coordinatesJoinCageEigen(i,j)*p.cagePosition[p.joinCage[j]][0];
                                         pos_y += p.coordinatesJoinCageEigen(i,j)*p.cagePosition[p.joinCage[j]][1];
                                     }
-                                    p.objectPositionEigen(i,0) += (1.f-p.smoothBoundaryWeightsEigen(i)) * pos_x;
-                                    p.objectPositionEigen(i,1) += (1.f-p.smoothBoundaryWeightsEigen(i)) * pos_y;
+                                    p.controlledObjectPosition[dd][0] += (1.f-p.smoothBoundaryWeightsEigen(i)) * pos_x;
+                                    p.controlledObjectPosition[dd][1] += (1.f-p.smoothBoundaryWeightsEigen(i)) * pos_y;
 
-                                    p.controlledObjectPosition[dd][0] = p.objectPositionEigen(i, 0);
-                                    p.controlledObjectPosition[dd][1] = p.objectPositionEigen(i, 1);
                                     ++i;
                                 }
                             }
@@ -325,19 +316,8 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                 p.coordinatesCageEigen.setZero(objectNbV, cageNbV);
                 p.coordinatesJoinCageEigen.setZero(objectNbV, p.joinCage.size());
 
-                p.cagePositionEigen.resize(cageNbV,2);
-                p.objectPositionEigen.resize(objectNbV,2);
                 p.boundaryWeightsEigen.setZero(objectNbV,1);
                 p.smoothBoundaryWeightsEigen.setZero(objectNbV,1);
-
-                i = 0;
-
-                for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
-                {
-                    p.cagePositionEigen(i, 0) = positionCage[dd][0];
-                    p.cagePositionEigen(i, 1) = positionCage[dd][1];
-                    ++i;
-                }
 
                 i = 0;
 
@@ -345,10 +325,8 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                 {
                     if(p.beginningDart == indexCageObject[dd])
                     {
-                        p.objectPositionEigen(i, 0) = positionObject[dd][0];
-                        p.objectPositionEigen(i, 1) = positionObject[dd][1];
                         computePointMVCFromCage(dd, positionObject, positionCage, p.coordinatesCageEigen, i, cage, p.beginningDart, cageNbV);
-                        computePointMVCFromJoinCage(dd, positionObject, positionCage, p.coordinatesJoinCageEigen, i, cage, p.joinCage);
+                        computePointMVCFromJoinCage(dd, positionObject, positionCage, p.coordinatesJoinCageEigen, i, p.joinCage);
                         ++i;
                     }
                 }
@@ -489,7 +467,7 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
 
 void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                                                  const VertexAttribute<PFP2::VEC3>& positionCage, Eigen::MatrixXf& coordinates,
-                                                                 int index, PFP2::MAP* cage, const std::vector<Dart>& joinCage)
+                                                                 int index, const std::vector<Dart>& joinCage)
 {
     PFP2::REAL sumMVC(0.);
     Dart cur, prev, next;
@@ -533,7 +511,6 @@ void Surface_DeformationCage_Plugin::computePointMVCFromJoinCage(Dart vertex, co
 
             if(distance_next>distance_prev)
             {
-
                 PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[cur]).norm2()
                                     / (positionCage[next]-positionCage[cur]).norm2());
 
@@ -889,8 +866,6 @@ std::vector<Dart> Surface_DeformationCage_Plugin::findJoinCage(PFP2::MAP* cage, 
         }
         currentDart = cage->phi<12>(currentDart);
     } while(currentDart != cage->phi2(startingDart));
-
-    CGoGNout << "Size : " << joinCage.size() << CGoGNendl;
 
     return joinCage;
 }

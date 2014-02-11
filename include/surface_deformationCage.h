@@ -46,9 +46,6 @@ struct CageParameters
     Eigen::MatrixXf coordinatesCageEigen;
     Eigen::MatrixXf coordinatesJoinCageEigen;
 
-    Eigen::Matrix<float, Eigen::Dynamic, 2> cagePositionEigen;
-    Eigen::Matrix<float, Eigen::Dynamic, 2> objectPositionEigen;
-
     Eigen::Matrix<float, Eigen::Dynamic, 1> boundaryWeightsEigen;
     Eigen::Matrix<float, Eigen::Dynamic, 1> smoothBoundaryWeightsEigen;
 
@@ -97,7 +94,7 @@ private :
                                  Eigen::MatrixXf& coordinates, int index, PFP2::MAP* cage, Dart beginningDart, int cageNbV);
     void computePointMVCFromJoinCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                      const VertexAttribute<PFP2::VEC3>& positionCage,
-                                     Eigen::MatrixXf& coordinates, int index, PFP2::MAP* cage, const std::vector<Dart>& joinCage);
+                                     Eigen::MatrixXf& coordinates, int index, const std::vector<Dart>& joinCage);
     PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
                           const VertexAttribute<PFP2::VEC3>& positionCage);
     PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart current, Dart next, Dart previous,
