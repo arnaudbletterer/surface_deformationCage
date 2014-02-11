@@ -190,6 +190,7 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
 
             if(mh_object)
             {
+                m_positionVBO->updateData(positionObject);
                 mh_object->updateBB(positionObject);
                 mh_object->notifyAttributeModification(positionObject);
             }
