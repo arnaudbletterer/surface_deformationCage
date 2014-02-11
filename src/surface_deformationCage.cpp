@@ -180,6 +180,7 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
 
                                     ++i;
                                 }
+
                             }
 
                             positionObject = p.controlledObjectPosition;
