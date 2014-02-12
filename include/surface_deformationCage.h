@@ -56,6 +56,9 @@ struct CageParameters
 
     PFP2::VEC3 min, max;
 
+    int cageNbV;
+    int objectNbV;
+
     std::vector<Dart> joinCage;
 };
 
