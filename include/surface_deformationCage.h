@@ -46,8 +46,11 @@ struct CageParameters
     Eigen::MatrixXf coordinatesCageEigen;
     Eigen::MatrixXf coordinatesJoinCageEigen;
 
-    Eigen::Matrix<float, Eigen::Dynamic, 1> boundaryWeightsEigen;
-    Eigen::Matrix<float, Eigen::Dynamic, 1> smoothBoundaryWeightsEigen;
+    Eigen::Matrix<float, Eigen::Dynamic, 2> cagePositionEigen;
+    Eigen::Matrix<float, Eigen::Dynamic, 2> objectPositionEigen;
+
+    Eigen::MatrixXf boundaryWeightsEigen;
+    Eigen::MatrixXf smoothBoundaryWeightsEigen;
 
     Dart beginningDart;
 
@@ -92,9 +95,7 @@ private :
     void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                  const VertexAttribute<PFP2::VEC3>& positionCage,
                                  Eigen::MatrixXf& coordinates, int index, PFP2::MAP* cage, Dart beginningDart, int cageNbV);
-    void computePointMVCFromJoinCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
-                                     const VertexAttribute<PFP2::VEC3>& positionCage,
-                                     Eigen::MatrixXf& coordinates, int index, const std::vector<Dart>& joinCage);
+
     PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
                           const VertexAttribute<PFP2::VEC3>& positionCage);
     PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart current, Dart next, Dart previous,
@@ -103,8 +104,11 @@ private :
     /*
      *Fonctions de l'article
      */
-    PFP2::REAL boundaryWeightFunction(const Eigen::MatrixXf& coordinates, Dart beginningDart, PFP2::MAP* cage, int index);
+    void boundaryWeightFunction(const Eigen::MatrixXf& coordinates, Dart beginningDart,
+                                      Eigen::MatrixXf& boundaryWeights, PFP2::MAP* cage, int index);
+
     PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
+
     std::vector<Dart> findJoinCage(PFP2::MAP* cage, Dart beginningDart);
 
     bool isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max);
