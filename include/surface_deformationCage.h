@@ -11,7 +11,7 @@
 
 #include "mapHandler.h"
 
-#include "MVCCoordinates.h"
+#include "spacePoint.h"
 
 #include "Eigen/Geometry"
 
@@ -93,12 +93,12 @@ public:
     void computeMVCFromDialog();
 
 private :
-    void computeBoundaryWeights(PFP2::MAP* cage, PFP2::MAP* object, PFP2::REAL h = M_H, bool first = true);
-    void computeExternalCoordinates(PFP2::MAP* cage, PFP2::MAP* object);
+    void computeBoundaryWeights(PFP2::MAP* cage, PFP2::MAP* object);
 
     void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                  const VertexAttribute<PFP2::VEC3>& positionCage,
-                                 Eigen::MatrixXf& coordinates, int index, PFP2::MAP* cage, Dart beginningDart, int cageNbV);
+                                 Eigen::Matrix<float, Eigen::Dynamic, 1>& coordinates,
+                                 PFP2::MAP* cage, Dart beginningDart, int cageNbV);
 
     PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
                           const VertexAttribute<PFP2::VEC3>& positionCage);
@@ -108,8 +108,8 @@ private :
     /*
      *Fonctions de l'article
      */
-    void boundaryWeightFunction(const Eigen::MatrixXf& coordinates, Dart beginningDart,
-                                      Eigen::MatrixXf& boundaryWeights, PFP2::MAP* cage, int index);
+    void boundaryWeightFunction(const Eigen::Matrix<float, Eigen::Dynamic, 1>& coordinates, Dart beginningDart,
+                                      Eigen::Matrix<float, Eigen::Dynamic, 1>& boundaryWeights, PFP2::MAP* cage, int nbAdjCages);
 
     PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
 
