@@ -94,6 +94,7 @@ public:
 
 private :
     void computeBoundaryWeights(PFP2::MAP* cage, PFP2::MAP* object, PFP2::REAL h = M_H, bool first = true);
+    void computeExternalCoordinates(PFP2::MAP* cage, PFP2::MAP* object);
 
     void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                  const VertexAttribute<PFP2::VEC3>& positionCage,

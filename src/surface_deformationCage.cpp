@@ -138,7 +138,6 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                         {
                             int i = 0;
                             Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, p.beginningDart);
-
                             for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
                             {
                                 p.cagePositionEigen(i, 0) = p.cagePosition[dd][0];
@@ -148,6 +147,8 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
 
                             object = mh_object->getMap();
 
+                            p.objectPositionEigen = p.coordinatesCageEigen*p.cagePositionEigen;
+
                             VertexAttribute<Dart> indexCageObject = object->getAttribute<Dart, VERTEX>("indexCage");
                             if(!indexCageObject.isValid())
                             {
@@ -156,38 +157,15 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                             }
 
                             i = 0;
-                            unsigned int j = 0;
-                            PFP2::REAL pos_x, pos_y;
-                            TraversorV<PFP2::MAP> trav_vert_object(*object);
-                            for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
+                            TraversorV<PFP2::MAP> trav_vert_vert_object(*object);
+                            for(Dart dd = trav_vert_vert_object.begin(); dd != trav_vert_vert_object.end(); dd = trav_vert_vert_object.next())
                             {
                                 if(indexCageObject[dd] == p.beginningDart)
                                 {
-                                    pos_x = 0.f;
-                                    pos_y = 0.f;
-                                    j = 0;
-                                    for(Dart ddd = trav_vert_face_cage.begin(); ddd != trav_vert_face_cage.end(); ddd = trav_vert_face_cage.next())
-                                    {
-                                        pos_x += p.coordinatesCageEigen(i,j)*p.cagePosition[ddd][0];
-                                        pos_y += p.coordinatesCageEigen(i,j)*p.cagePosition[ddd][1];
-                                        ++j;
-                                    }
-                                    p.controlledObjectPosition[dd][0] = p.smoothBoundaryWeightsEigen(i) * pos_x;
-                                    p.controlledObjectPosition[dd][1] = p.smoothBoundaryWeightsEigen(i) * pos_y;
-
-                                    pos_x = 0.f;
-                                    pos_y = 0.f;
-                                    for(j=0; j<p.joinCage.size(); ++j)
-                                    {
-                                        pos_x += p.coordinatesJoinCageEigen(i,j)*p.cagePosition[p.joinCage[j]][0];
-                                        pos_y += p.coordinatesJoinCageEigen(i,j)*p.cagePosition[p.joinCage[j]][1];
-                                    }
-                                    p.controlledObjectPosition[dd][0] += (1.f-p.smoothBoundaryWeightsEigen(i)) * pos_x;
-                                    p.controlledObjectPosition[dd][1] += (1.f-p.smoothBoundaryWeightsEigen(i)) * pos_y;
-
+                                    p.controlledObjectPosition[dd][0] = p.objectPositionEigen(i,0);
+                                    p.controlledObjectPosition[dd][1] = p.objectPositionEigen(i,1);
                                     ++i;
                                 }
-
                             }
 
                             positionObject = p.controlledObjectPosition;
@@ -354,42 +332,11 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             }
         }
 
-        m_positionVBO->updateData(positionObject);
-
-        m_toDraw = true;
-
         computeBoundaryWeights(cage, object);
+        computeExternalCoordinates(cage, object);
 
-        Dart startingDart, currentDart;
-
-        for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
-        {
-            index_cage = cage->getEmbedding<FACE>(d);
-            if((!h_cageParameters.contains(index_cage)) && !cage->isBoundaryMarked2(d))
-            {
-                CageParameters& p = h_cageParameters[index_cage];
-
-                Dart startingDart = p.beginningDart;
-                do
-                {
-                    currentDart = startingDart;
-                    do
-                    {
-                        if(!cage->isBoundaryMarked2(currentDart))
-                        {
-                            //CHOSES A FAIRE
-                        }
-                        currentDart = cage->phi<21>(currentDart);
-                    } while(currentDart != startingDart);
-
-                    startingDart = cage->phi1(startingDart);
-                } while(startingDart != p.beginningDart);
-
-                p.coordinatesJoinCageEigen.setZero(objectNbV, p.joinCage.size());
-            }
-        }
-
-
+        m_positionVBO->updateData(positionObject);
+        m_toDraw = true;
     }
 }
 
@@ -432,7 +379,7 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
                         //Uniquement pour avoir de la coloration
                         if(p.boundaryWeightsEigen(i, j) > 0)
                         {
-                            value *= p.boundaryWeightsEigen(i,j);
+                            value *= p.boundaryWeightsEigen(i, j);
                         }
                         ++j;
                     }
@@ -447,6 +394,44 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
 
     m_colorVBO->updateData(colorObject);
     m_schnapps->getSelectedView()->updateGL();
+}
+
+void Surface_DeformationCage_Plugin::computeExternalCoordinates(PFP2::MAP* cage, PFP2::MAP* object)
+{
+    int index_cage, i = 0, j = 0;
+
+    VertexAttribute<PFP2::VEC3> positionCage = cage->getAttribute<PFP2::VEC3, VERTEX>("position");
+    if(!positionCage.isValid())
+    {
+        CGoGNout << "Position attribute chosen for the cage isn't valid" << CGoGNendl;
+        return;
+    }
+
+    VertexAttribute<PFP2::VEC3> positionObject = cage->getAttribute<PFP2::VEC3, VERTEX>("position");
+    if(!positionObject.isValid())
+    {
+        CGoGNout << "Position attribute chosen for the cage isn't valid" << CGoGNendl;
+        return;
+    }
+
+    TraversorF<PFP2::MAP> trav_face_cage(*cage);
+    TraversorV<PFP2::MAP> trav_vert_object(*object);
+    for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
+    {
+        index_cage = cage->getEmbedding<FACE>(d);
+        if(h_cageParameters.contains(index_cage))
+        {
+            CageParameters& p = h_cageParameters[index_cage];
+
+            j = 0;
+            for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
+            {
+                ++j;
+            }
+
+            ++i;
+        }
+    }
 }
 
 /*
@@ -593,22 +578,6 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     PFP2::REAL Bij = Geom::angle((vi-pt), (vj-pt));
     PFP2::REAL Bki = Geom::angle((vk-pt), (vi-pt));
 
-    if(isnan(Bij) && isnan(Bki))
-    {
-        //Le sommet de l'objet se trouve sur vi
-        return 999999.f;
-    }
-    if(isnan(Bij))
-    {
-        //Le sommet se trouve sur [vi;vj]
-        return 700000.f;
-    }
-    if(isnan(Bki))
-    {
-        //Le sommet se trouve sur [vi;vk]
-        return 500000.f;
-    }
-
     if(!positiveAngle_prev)
     {
         Bij *= -1;
@@ -618,28 +587,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
         Bki *= -1;
     }
 
-    PFP2::REAL sinBij = sin(Bij);
-    PFP2::REAL sinBki = sin(Bki);
-
-    if(fabs(sinBij) < FLT_EPSILON*10000 && fabs(sinBki) < FLT_EPSILON*10000)
-    {
-        return 800000.f;
-    }
-    if(fabs(sinBij) < FLT_EPSILON*10000)
-    {
-        //Le sommet se trouve sur [vi;vj]
-        return 700000.f;
-    }
-    if(fabs(sinBki) < FLT_EPSILON*10000)
-    {
-        //Le sommet se trouve sur [vi;vk]
-        return 500000.f;
-    }
-
-    PFP2::REAL tanBij = (1-cos(Bij))/sinBij;
-    PFP2::REAL tanBki = (1-cos(Bki))/sinBki;
-
-    res = (tanBki + tanBij) /((pt-vi).norm());
+    res = (tan(Bki/2.f) + (tan(Bij/2.f))) /((pt-vi).norm());
 
     return res;
 }
