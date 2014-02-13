@@ -107,7 +107,7 @@ private :
     /*
      *Fonctions de l'article
      */
-    void boundaryWeightFunction(const Eigen::MatrixXf& coordinates, Dart beginningDart,
+    PFP2::REAL boundaryWeightFunction(const Eigen::MatrixXf& coordinates, Dart beginningDart,
                                       Eigen::MatrixXf& boundaryWeights, PFP2::MAP* cage, int index);
 
     PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
