@@ -23,7 +23,7 @@ file(
 
 SET(
 	PLUGIN_QOBJECT_FILES
-	include/surface_deformationCage.h
+  include/surface_deformationCage.h
 	include/dialog_deformationCage.h
 )
 

@@ -11,9 +11,9 @@
 
 #include "mapHandler.h"
 
-#include "spacePoint.h"
-
 #include "Eigen/Geometry"
+
+#include "spacePoint.h"
 
 namespace CGoGN
 {
@@ -22,45 +22,6 @@ namespace SCHNApps
 {
 
 #define M_H 1.f
-
-struct MapParameters
-{
-    MapParameters();
-    ~MapParameters();
-
-    void start();
-    void stop();
-
-    bool m_initialized;
-    bool m_linked;
-    bool m_toComputeMVC;
-};
-
-struct CageParameters
-{
-    VertexAttribute<PFP2::VEC3> cagePosition;
-
-    MapHandlerGen* controlledObject;
-    VertexAttribute<PFP2::VEC3> controlledObjectPosition;
-
-    Eigen::MatrixXf coordinatesCageEigen;
-    Eigen::MatrixXf coordinatesJoinCageEigen;
-
-    Eigen::Matrix<float, Eigen::Dynamic, 2> cagePositionEigen;
-    Eigen::Matrix<float, Eigen::Dynamic, 2> objectPositionEigen;
-
-    Eigen::MatrixXf boundaryWeightsEigen;
-    Eigen::MatrixXf smoothBoundaryWeightsEigen;
-
-    Dart beginningDart;
-
-    PFP2::VEC3 min, max;
-
-    int cageNbV;
-    int objectNbV;
-
-    std::vector<Dart> joinCage;
-};
 
 class Surface_DeformationCage_Plugin : public PluginInteraction
 {
@@ -97,7 +58,7 @@ private :
 
     void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                  const VertexAttribute<PFP2::VEC3>& positionCage,
-                                 Eigen::Matrix<float, Eigen::Dynamic, 1>& coordinates,
+                                 Eigen::Matrix<PFP2::REAL, Eigen::Dynamic, 1>& weights,
                                  PFP2::MAP* cage, Dart beginningDart, int cageNbV);
 
     PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
@@ -108,8 +69,8 @@ private :
     /*
      *Fonctions de l'article
      */
-    void boundaryWeightFunction(const Eigen::Matrix<float, Eigen::Dynamic, 1>& coordinates, Dart beginningDart,
-                                      Eigen::Matrix<float, Eigen::Dynamic, 1>& boundaryWeights, PFP2::MAP* cage, int nbAdjCages);
+    void boundaryWeightFunction(const Eigen::Matrix<PFP2::REAL, Eigen::Dynamic, 1>& coordinates, Dart beginningDart,
+                                std::vector<PFP2::REAL>& boundaryWeights, PFP2::MAP* cage, int nbAdjCages);
 
     PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
 
@@ -133,9 +94,6 @@ public slots:
 private:
     Dialog_DeformationCage* m_deformationCageDialog;
     QAction* m_deformationCageAction;
-
-public:
-    QHash<int, CageParameters> h_cageParameters;
 
 protected:
     CGoGN::Utils::ShaderColorPerVertex* m_colorPerVertexShader;

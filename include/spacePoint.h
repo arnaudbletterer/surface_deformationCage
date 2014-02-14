@@ -15,21 +15,25 @@ namespace SCHNApps
 class SpacePoint {
 
 public :
-    Eigen::Matrix<float, Eigen::Dynamic, 1> m_cageCoordinatesEigen;
-    Eigen::Matrix<float, Eigen::Dynamic, 1> m_cageBoundaryWeightsEigen;
-    std::vector<Eigen::Matrix<float, Eigen::Dynamic, 1> > m_adjCagesCoordinates;
+    Eigen::Matrix<PFP2::REAL, Eigen::Dynamic, 1> m_cageWeightsEigen;
 
-private :
-    Dart m_cageDart;
+    std::vector<Eigen::Matrix<PFP2::REAL, Eigen::Dynamic, 1> > m_adjCagesCoordinates;
     std::vector<Dart> m_adjCagesDart;
     std::vector<PFP2::REAL> m_adjCagesWeights;
 
+private :
+    Dart m_cageDart;
+
 public :
-    SpacePoint(Dart d = EMBNULL, int cageNbV = 0, int nbAdjCages = 0);
+    SpacePoint(int i = 0)
+    {}
+
+    ~SpacePoint()
+    {}
 
     void setCageNbV(int n)
     {
-        m_cageCoordinatesEigen.setZero(n);
+        m_cageWeightsEigen.setZero(n);
     }
 
     void setNbAdjCages(int n)
