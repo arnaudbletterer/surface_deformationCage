@@ -15,11 +15,11 @@ namespace SCHNApps
 class SpacePoint {
 
 public :
-    Eigen::Matrix<PFP2::REAL, Eigen::Dynamic, 1> m_cageWeightsEigen;
+    Eigen::VectorXf m_cageWeightsEigen;
+    std::vector<Eigen::VectorXf> m_adjCagesWeights;
 
-    std::vector<Eigen::Matrix<PFP2::REAL, Eigen::Dynamic, 1> > m_adjCagesCoordinates;
+    std::vector<PFP2::REAL> m_cageBoundaryWeights;
     std::vector<Dart> m_adjCagesDart;
-    std::vector<PFP2::REAL> m_adjCagesWeights;
 
 private :
     Dart m_cageDart;
@@ -38,8 +38,8 @@ public :
 
     void setNbAdjCages(int n)
     {
-        m_adjCagesCoordinates.resize(n);
         m_adjCagesWeights.resize(n);
+        m_cageBoundaryWeights.resize(n);
     }
 
     void setCage(Dart d)
@@ -61,21 +61,6 @@ public :
     {
         m_adjCagesDart = adj;
         setNbAdjCages(m_adjCagesDart.size());
-    }
-
-    Dart getAdjacentCage(int index)
-    {
-        return m_adjCagesDart[index];
-    }
-
-    void addAdjacentCageWeight(PFP2::REAL w)
-    {
-        m_adjCagesWeights.push_back(w);
-    }
-
-    Dart getAdjacentCageWeight(int index)
-    {
-        return m_adjCagesWeights[index];
     }
 
     bool isInitialized()
