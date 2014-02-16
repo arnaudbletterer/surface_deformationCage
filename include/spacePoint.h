@@ -59,7 +59,7 @@ public :
 
     void setAdjacentCages(const std::vector<Dart>& adj)
     {
-        m_adjCagesDart = adj;
+        m_adjCagesDart = std::vector<Dart>(adj);
         setNbAdjCages(m_adjCagesDart.size());
     }
 

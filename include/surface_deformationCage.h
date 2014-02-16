@@ -74,8 +74,6 @@ private :
 
     PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
 
-    std::vector<Dart> findJoinCage(PFP2::MAP* cage, Dart beginningDart);
-
     bool isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max);
 
 private slots:

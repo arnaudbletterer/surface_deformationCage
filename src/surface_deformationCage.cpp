@@ -237,16 +237,19 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                 }
             }
 
+            DartMarker marker(*cage);
+            marker.markOrbit<FACE>(d);
             std::vector<Dart> adjCages;
             adjCages.reserve(cage->faceDegree(d));
             Dart startingDart = d;
             do
             {
-                Dart currentDart = cage->phi<21>(startingDart);
+                Dart currentDart = startingDart;
                 do
                 {
-                    if(!cage->isBoundaryMarked2(currentDart))
+                    if(!cage->isBoundaryMarked2(currentDart) && !marker.isMarked(currentDart))
                     {
+                        marker.markOrbit<FACE>(currentDart);
                         adjCages.push_back(currentDart);
                     }
                     currentDart = cage->phi<21>(currentDart);
@@ -255,12 +258,15 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                 startingDart = cage->phi1(startingDart);
             } while(startingDart != d);
 
+            //CGoGNout << adjCages.size() << CGoGNendl;
+
             TraversorV<PFP2::MAP> trav_vert_object(*object);
             for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
             {
                 if(!spacePointObject[dd].isInitialized() && isInCage(positionObject[dd], min, max))
                 {
                     //Si le sommet n'était pas encore associé à une cage
+                    spacePointObject[dd].setCage(d);
                     spacePointObject[dd].setCageNbV(cage->faceDegree(d));
                     spacePointObject[dd].setAdjacentCages(adjCages);
 
@@ -432,22 +438,22 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     PFP2::VEC3 vj = positionCage[next];
     PFP2::VEC3 vk = positionCage[previous];
 
-    bool positiveAngle_prev = Geom::testOrientation2D(pt, vk, vi) == Geom::LEFT;
-    bool positiveAngle_next = Geom::testOrientation2D(pt, vi, vj) == Geom::LEFT;
+//    bool positiveAngle_prev = Geom::testOrientation2D(pt, vk, vi) == Geom::LEFT;
+//    bool positiveAngle_next = Geom::testOrientation2D(pt, vi, vj) == Geom::LEFT;
 
     PFP2::REAL Bij = Geom::angle((vi-pt), (vj-pt));
     PFP2::REAL Bki = Geom::angle((vk-pt), (vi-pt));
 
-    if(!positiveAngle_prev)
-    {
-        Bij *= -1;
-    }
-    if(!positiveAngle_next)
-    {
-        Bki *= -1;
-    }
+//    if(!positiveAngle_prev)
+//    {
+//        Bij *= -1;
+//    }
+//    if(!positiveAngle_next)
+//    {
+//        Bki *= -1;
+//    }
 
-    res = (tan(Bki/2.f) + (tan(Bij/2.f))) /((pt-vi).norm());
+    res = (tan(Bij/2.f) + (tan(Bki/2.f))) /((pt-vi).norm());
 
     return res;
 }
