@@ -109,12 +109,12 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
             for(Dart d = trav_vert_object.begin(); d != trav_vert_object.end(); d = trav_vert_object.next())
             {
                 Eigen::MatrixXf cageCoordinatesEigen;
-                cageCoordinatesEigen.setZero(spacePointObject[d].m_adjCagesDart.size(), 2);
+                cageCoordinatesEigen.setZero(spacePointObject[d].m_cageWeightsEigen.rows(), 2);
 
                 //On récupère les positions des sommets de la cage locale
                 unsigned int i = 0;
                 Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, spacePointObject[d].getCageDart());
-                for(Dart dd = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end(); d = trav_vert_face_cage.next())
+                for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
                 {
                     cageCoordinatesEigen(i, 0) = positionCage[dd][0];
                     cageCoordinatesEigen(i, 1) = positionCage[dd][1];
@@ -122,28 +122,31 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                 }
 
                 Eigen::Vector2f objectPositionEigen;
+                objectPositionEigen.setZero(2);
+                float totalBoundaries(0.);
 
                 //On récupère les positions des sommets des cages adjacentes
                 for(i = 0; i < spacePointObject[d].m_adjCagesDart.size(); ++i)
                 {
                     Eigen::MatrixXf adjCageCoordinatesEigen;
                     Eigen::VectorXf adjCageWeightsEigen;
-                    adjCageCoordinatesEigen.setZero(spacePointObject[d].m_adjCagesDart.size(), 2);
-                    adjCageWeightsEigen.setZero(spacePointObject[d].m_adjCagesDart.size());
+                    adjCageCoordinatesEigen.setZero(spacePointObject[d].m_adjCagesWeights[i].rows(), 2);
+                    adjCageWeightsEigen.setZero(spacePointObject[d].m_adjCagesWeights[i].rows());
                     int j = 0;
                     Traversor2FV<PFP2::MAP> trav_adj(*cage, spacePointObject[d].m_adjCagesDart[i]);
                     for(Dart dd = trav_adj.begin(); dd != trav_adj.end(); dd = trav_adj.next())
                     {
-                        //A TERMINER
                         adjCageWeightsEigen(j) = spacePointObject[d].m_adjCagesWeights[i](j);
                         adjCageCoordinatesEigen(j, 0) = positionCage[dd][0];
                         adjCageCoordinatesEigen(j, 1) = positionCage[dd][1];
                         ++j;
                     }
-                    objectPositionEigen += adjCageWeightsEigen*adjCageCoordinatesEigen;
+
+                    objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[i] * adjCageWeightsEigen * adjCageCoordinatesEigen;
+                    totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i];
                 }
 
-                objectPositionEigen = spacePointObject[d].m_cageWeightsEigen*cageCoordinatesEigen;
+                objectPositionEigen += (1-totalBoundaries) * spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen;
 
                 positionObject[d][0] = objectPositionEigen(0);
                 positionObject[d][1] = objectPositionEigen(1);
@@ -316,6 +319,8 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
 
     PFP2::REAL distance_next(0.f), distance_prev(0.f);
 
+    weights.setZero(cageNbV);
+
     Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, beginningDart);
     for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end() && !stop; d = trav_vert_face_cage.next())
     {
@@ -333,50 +338,50 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
         if(distance_next < FLT_EPSILON && distance_prev < FLT_EPSILON)
         {
             //Le sommet de l'objet se situe sur le sommet courant de la cage
-            weights.setZero();
+            weights.setZero(cageNbV);
 
-            weights(i, 0) = 1.f;    //Le sommet de l'objet est entièrement dépendant du sommet courant de la cage
+            weights(i) = 1.f;    //Le sommet de l'objet est entièrement dépendant du sommet courant de la cage
 
             stop = true;
         }
         else if(distance_next < FLT_EPSILON)
         {
             //Le sommet de l'objet est sur [cur;next]
-            weights.setZero();
+            weights.setZero(cageNbV);
 
             PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
                                 / (positionCage[next]-positionCage[d]).norm2());
 
-            weights((i+1)%cageNbV, 0) = w;
-            weights(i, 0) = 1.f-w;
+            weights((i+1)%cageNbV) = w;
+            weights(i) = 1.f-w;
 
             stop = true;
         }
         else if(distance_prev < FLT_EPSILON)
         {
             //Le sommet de l'objet est sur [cur;prev]
-            weights.setZero();
+            weights.setZero(cageNbV);
 
             PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
                                 / (positionCage[prev]-positionCage[d]).norm2());
 
             if(i==0)
             {
-                weights(cageNbV-1, 0) = w;
+                weights(cageNbV-1) = w;
             }
             else
             {
-                weights(i-1, 0) = w;
+                weights(i-1) = w;
             }
-            weights(i, 0) = 1.f-w;
+            weights(i) = 1.f-w;
 
             stop = true;
         }
         else
         {
             //On calcule les coordonnées de façon normale
-            weights(i, 0) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage);
-            sumMVC += weights(i, 0);
+            weights(i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage);
+            sumMVC += weights(i);
         }
         ++i;
     }
@@ -385,7 +390,7 @@ void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const 
     {
         for(i=0; i<weights.rows(); ++i)
         {
-            weights(i, 0) /= sumMVC;
+            weights(i) /= sumMVC;
         }
     }
 }
