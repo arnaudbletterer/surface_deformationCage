@@ -15,8 +15,8 @@ namespace SCHNApps
 class SpacePoint {
 
 public :
-    Eigen::VectorXf m_cageWeightsEigen;
-    std::vector<Eigen::VectorXf> m_adjCagesWeights;
+    Eigen::Matrix<float, 1, Eigen::Dynamic> m_cageWeightsEigen;
+    std::vector<Eigen::Matrix<float, 1, Eigen::Dynamic> > m_adjCagesWeights;
 
     std::vector<PFP2::REAL> m_cageBoundaryWeights;
     std::vector<Dart> m_adjCagesDart;
