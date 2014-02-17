@@ -127,8 +127,6 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                 objectPositionEigen.setZero(1, 2);
                 float totalBoundaries(0.);
 
-                CGoGNout << spacePointObject[d].m_adjCagesDart.size() << CGoGNendl;
-
                 //On récupère les positions des sommets des cages adjacentes
                 for(i = 0; i < spacePointObject[d].m_adjCagesDart.size(); ++i)
                 {
@@ -146,13 +144,13 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                         adjCageCoordinatesEigen(j, 1) = positionCage[dd][1];
                         ++j;
                     }
-                    objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[i] * (adjCageWeightsEigen * adjCageCoordinatesEigen);
+                    objectPositionEigen += (adjCageWeightsEigen * adjCageCoordinatesEigen);
                     totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i];
                 }
 
-                //objectPositionEigen *= totalBoundaries/spacePointObject[d].m_adjCagesDart.size();
+                objectPositionEigen *= (1-totalBoundaries);
 
-                objectPositionEigen += (1-totalBoundaries) * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
+                objectPositionEigen += totalBoundaries * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
 
                 positionObject[d][0] = objectPositionEigen(0, 0);
                 positionObject[d][1] = objectPositionEigen(0, 1);
@@ -555,12 +553,13 @@ PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL& x
 {
     if(x >= h)
     {
-        return 0.5f;
+        return 0.f;
     }
 
     if(h > FLT_EPSILON*10000)
     {
-        return (1/4. * std::sin(M_PI*(x/h-1/2.)) + 1/4.);
+        return (1/4. * std::cos(M_PI*(x/h)) + 1/4.);
+        //return (1/4. * std::sin(M_PI*(x/h-1/2.)) + 1/4.);
         //return -2*(x/h)*(x/h)*(x/h) + 3*(x/h)*(x/h);
         //return -8*(x/h)*(x/h)*(x/h)*(x/h)*(x/h) + 20*(x/h)*(x/h)*(x/h)*(x/h) - 18*(x/h)*(x/h)*(x/h) + 7*(x/h)*(x/h);
     }
