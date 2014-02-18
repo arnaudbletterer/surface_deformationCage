@@ -144,7 +144,7 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                         adjCageCoordinatesEigen(j, 1) = positionCage[dd][1];
                         ++j;
                     }
-//                    objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[i] * (adjCageWeightsEigen * adjCageCoordinatesEigen);
+                    objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[i] * (adjCageWeightsEigen * adjCageCoordinatesEigen);
                     totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i];
 
                     CGoGNout << spacePointObject[d].m_cageBoundaryWeights[i] << CGoGNendl;
@@ -287,7 +287,8 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                         //On calcule les coordonnées du point de l'espace courant pour chacune des cages adjacentes
                         for(unsigned int j=0; j<adjCages.size(); ++j)
                         {
-                            computePointMVCFromCage(dd, positionObject, positionCage, spacePointObject[dd].m_adjCagesWeights[j], cage, adjCages[j], cage->faceDegree(adjCages[j]));
+                            computePointMVCFromCage(dd, positionObject, positionCage, spacePointObject[dd].m_adjCagesWeights[j],
+                                                    cage, spacePointObject[dd].m_adjCagesDart[j], cage->faceDegree(spacePointObject[dd].m_adjCagesDart[j]));
                         }
                     }
                 }
@@ -315,7 +316,7 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
 /*
   * Fonction qui calcule les coordonnées MVC d'un point par rapport à une cage
   */
-void Surface_DeformationCage_Plugin::computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
+void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                                              const VertexAttribute<PFP2::VEC3>& positionCage,
                                                              Eigen::Matrix<float, 1, Eigen::Dynamic>& weights,
                                                              PFP2::MAP* cage, Dart beginningDart, int cageNbV)
