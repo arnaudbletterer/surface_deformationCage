@@ -69,8 +69,8 @@ private :
     /*
      *Fonctions de l'article
      */
-    void boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>& coordinates, Dart beginningDart,
-                                std::vector<PFP2::REAL>& boundaryWeights, PFP2::MAP* cage, int nbAdjCages);
+    void boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>& weights, Dart beginningDart,
+                                std::vector<PFP2::REAL>& boundaryWeights, PFP2::MAP* cage);
 
     PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
 

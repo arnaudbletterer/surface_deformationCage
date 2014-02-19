@@ -144,7 +144,7 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                         adjCageCoordinatesEigen(j, 1) = positionCage[dd][1];
                         ++j;
                     }
-                    objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[i] * (adjCageWeightsEigen * adjCageCoordinatesEigen);
+                    objectPositionEigen -= spacePointObject[d].m_cageBoundaryWeights[i] * (adjCageWeightsEigen * adjCageCoordinatesEigen);
                     totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i];
                 }
 
@@ -312,7 +312,7 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
     for(Dart d = trav_vert_object.begin(); d != trav_vert_object.end(); d = trav_vert_object.next())
     {
         boundaryWeightFunction(spacePointObject[d].m_cageWeightsEigen, spacePointObject[d].getCageDart(),
-                               spacePointObject[d].m_cageBoundaryWeights, cage, spacePointObject[d].m_adjCagesDart.size());
+                               spacePointObject[d].m_cageBoundaryWeights, cage);
         color = Utils::color_map_BCGYR(spacePointObject[d].m_cageBoundaryWeights[0]*2);
         colorObject[d] = PFP2::VEC4(color[0], color[1], color[2], 1.f);
     }
@@ -485,8 +485,8 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     return res;
 }
 
-void Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>& coordinates, Dart beginningDart,
-                                                            std::vector<PFP2::REAL>& boundaryWeights, PFP2::MAP* cage, int nbAdjCages)
+void Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>& weights, Dart beginningDart,
+                                                            std::vector<PFP2::REAL>& boundaryWeights, PFP2::MAP* cage)
 {
     PFP2::REAL sumCur(0.);
 
@@ -525,7 +525,7 @@ void Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::Matrix<
                             //Si la bordure courante n'a pas encore été considérée
                             researchedVertex = cage->getEmbedding<VERTEX>(d2);
                             marker.markOrbit<FACE>(d2);
-                            sumCur += coordinates(0, j);
+                            sumCur += weights(0, j);
                             restart = true;
                         }
                     }
@@ -535,7 +535,7 @@ void Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::Matrix<
                     if(cage->getEmbedding<VERTEX>(d) == researchedVertex)
                     {
                         //On a trouvé le deuxième sommet composant l'arête de la bordure courante
-                        sumCur += coordinates(0, j);
+                        sumCur += weights(0, j);
                         stop = true;
                     }
                 }
