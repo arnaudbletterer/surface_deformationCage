@@ -146,8 +146,6 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                     }
                     objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[i] * (adjCageWeightsEigen * adjCageCoordinatesEigen);
                     totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i];
-
-                    CGoGNout << spacePointObject[d].m_cageBoundaryWeights[i] << CGoGNendl;
                 }
 
                 objectPositionEigen += (1 - totalBoundaries) * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
@@ -303,12 +301,25 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
 {
     TraversorV<PFP2::MAP> trav_vert_object(*object);
     VertexAttribute<SpacePoint> spacePointObject = object->getAttribute<SpacePoint, VERTEX>("SpacePoint");
+    VertexAttribute<PFP2::VEC4> colorObject = object->getAttribute<PFP2::VEC4, VERTEX>("color");
+    if(!colorObject.isValid())
+    {
+        colorObject = object->addAttribute<PFP2::VEC4, VERTEX>("color");
+    }
+
+    PFP2::VEC3 color;
 
     for(Dart d = trav_vert_object.begin(); d != trav_vert_object.end(); d = trav_vert_object.next())
     {
         boundaryWeightFunction(spacePointObject[d].m_cageWeightsEigen, spacePointObject[d].getCageDart(),
                                spacePointObject[d].m_cageBoundaryWeights, cage, spacePointObject[d].m_adjCagesDart.size());
+        color = Utils::color_map_BCGYR(spacePointObject[d].m_cageBoundaryWeights[0]*2);
+        colorObject[d] = PFP2::VEC4(color[0], color[1], color[2], 1.f);
     }
+
+    m_colorVBO->updateData(colorObject);
+
+    m_toDraw = true;
 
     m_schnapps->getSelectedView()->updateGL();
 }
@@ -391,7 +402,7 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
         {
             //On calcule les coordonnées de façon normale
             weights(0, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage);
-            sumMVC += weights(0, i);
+            sumMVC += fabs(weights(0, i));
         }
         ++i;
     }
@@ -454,17 +465,17 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     PFP2::VEC3 vj = positionCage[next];
     PFP2::VEC3 vk = positionCage[previous];
 
-    bool positiveAngle_prev = Geom::testOrientation2D(pt, vk, vi) == Geom::LEFT;
-    bool positiveAngle_next = Geom::testOrientation2D(pt, vi, vj) == Geom::LEFT;
+    bool negativeAngle_prev = Geom::testOrientation2D(pt, vk, vi) == Geom::RIGHT;
+    bool negativeAngle_next = Geom::testOrientation2D(pt, vi, vj) == Geom::RIGHT;
 
     PFP2::REAL Bij = Geom::angle((vi-pt), (vj-pt));
     PFP2::REAL Bki = Geom::angle((vk-pt), (vi-pt));
 
-    if(!positiveAngle_prev)
+    if(negativeAngle_prev)
     {
         Bij *= -1;
     }
-    if(!positiveAngle_next)
+    if(negativeAngle_next)
     {
         Bki *= -1;
     }
@@ -474,7 +485,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     return res;
 }
 
-void Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::VectorXf& coordinates, Dart beginningDart,
+void Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>& coordinates, Dart beginningDart,
                                                             std::vector<PFP2::REAL>& boundaryWeights, PFP2::MAP* cage, int nbAdjCages)
 {
     PFP2::REAL sumCur(0.);
@@ -502,7 +513,7 @@ void Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::VectorX
         {
             if(cage->vertexDegree(d) > 2)
             {
-                //Si le sommet est incident à plus d'une face
+                //Si le sommet est incident à plus de 3 arêtes (plus d'une face)
                 d2 = cage->phi2(d);
                 if(researchedVertex == -1)
                 {

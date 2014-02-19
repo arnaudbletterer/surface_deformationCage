@@ -21,7 +21,7 @@ namespace CGoGN
 namespace SCHNApps
 {
 
-#define M_H 0.2f
+#define M_H 1.f
 
 class Surface_DeformationCage_Plugin : public PluginInteraction
 {
@@ -69,7 +69,7 @@ private :
     /*
      *Fonctions de l'article
      */
-    void boundaryWeightFunction(const Eigen::VectorXf& coordinates, Dart beginningDart,
+    void boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>& coordinates, Dart beginningDart,
                                 std::vector<PFP2::REAL>& boundaryWeights, PFP2::MAP* cage, int nbAdjCages);
 
     PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
