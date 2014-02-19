@@ -144,7 +144,7 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                         adjCageCoordinatesEigen(j, 1) = positionCage[dd][1];
                         ++j;
                     }
-                    objectPositionEigen -= spacePointObject[d].m_cageBoundaryWeights[i] * (adjCageWeightsEigen * adjCageCoordinatesEigen);
+                    objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[i] * (adjCageWeightsEigen * adjCageCoordinatesEigen);
                     totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i];
                 }
 
