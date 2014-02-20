@@ -145,7 +145,7 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                         adjCageCoordinatesEigen(j, 1) = positionCage[dd][1];
                         ++j;
                     }
-                    objectPositionEigen = spacePointObject[d].m_cageBoundaryWeights[i] * (adjCageWeightsEigen * adjCageCoordinatesEigen);
+                    objectPositionEigen = (adjCageWeightsEigen * adjCageCoordinatesEigen);
                     totalBoundaries *= spacePointObject[d].m_cageBoundaryWeights[i];
                 }
 
@@ -286,14 +286,15 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                         //On calcule les coordonnées du point de l'espace courant pour chacune des cages adjacentes
                         for(unsigned int j=0; j<adjCages.size(); ++j)
                         {
-                            computePointMVCFromCage(dd, positionObject, positionCage, spacePointObject[dd].m_adjCagesWeights[j],
-                                                    cage, spacePointObject[dd].m_adjCagesDart[j], cage->faceDegree(spacePointObject[dd].m_adjCagesDart[j]));
+                            computePointMVCFromCage(dd, positionObject, positionCage, spacePointObject[dd].m_adjCagesWeights[j], cage,
+                                                    spacePointObject[dd].m_adjCagesDart[j], cage->faceDegree(spacePointObject[dd].m_adjCagesDart[j]));
                         }
                     }
                 }
             }
         }
 
+        mh_cage->notifyAttributeModification(positionCage);     //JUSTE POUR DEBUG SANS DEPLACER DE SOMMETS DE CAGE
         computeBoundaryWeights(cage, object);
     }
 }
