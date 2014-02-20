@@ -125,7 +125,7 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
 
                 Eigen::Matrix<float, 1, 2> objectPositionEigen;
                 objectPositionEigen.setZero(1, 2);
-                float totalBoundaries(0.);
+                float totalBoundaries(1.);
 
                 //On récupère les positions des sommets des cages adjacentes
                 for(i = 0; i < spacePointObject[d].m_adjCagesDart.size(); ++i)
@@ -136,6 +136,7 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                     adjCageWeightsEigen.setZero(1, spacePointObject[d].m_adjCagesWeights[i].cols());
 
                     int j = 0;
+
                     Traversor2FV<PFP2::MAP> trav_adj(*cage, spacePointObject[d].m_adjCagesDart[i]);
                     for(Dart dd = trav_adj.begin(); dd != trav_adj.end(); dd = trav_adj.next())
                     {
@@ -144,11 +145,11 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                         adjCageCoordinatesEigen(j, 1) = positionCage[dd][1];
                         ++j;
                     }
-                    objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[i] * (adjCageWeightsEigen * adjCageCoordinatesEigen);
-                    totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i];
+                    objectPositionEigen = spacePointObject[d].m_cageBoundaryWeights[i] * (adjCageWeightsEigen * adjCageCoordinatesEigen);
+                    totalBoundaries *= spacePointObject[d].m_cageBoundaryWeights[i];
                 }
 
-                objectPositionEigen += (1 - totalBoundaries) * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
+                //objectPositionEigen += (1 - totalBoundaries) * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
 
                 positionObject[d][0] = objectPositionEigen(0, 0);
                 positionObject[d][1] = objectPositionEigen(0, 1);
