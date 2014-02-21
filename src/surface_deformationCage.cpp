@@ -220,8 +220,6 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             mh_object->registerAttribute(spacePointObject);
         }
 
-        PFP2::VEC3 min, max;
-
         TraversorV<PFP2::MAP> trav_vert_object(*object);
         for(Dart d = trav_vert_object.begin(); d != trav_vert_object.end(); d = trav_vert_object.next())
         {
