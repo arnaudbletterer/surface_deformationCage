@@ -1,4 +1,4 @@
-#include "surface_deformationCage.h"
+﻿#include "surface_deformationCage.h"
 
 namespace CGoGN
 {
@@ -315,8 +315,8 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
     {
         boundaryWeightFunction(spacePointObject[d].m_cageWeightsEigen, spacePointObject[d].getCageDart(),
                                spacePointObject[d].m_cageBoundaryWeights, cage);
-        color = Utils::color_map_BCGYR(spacePointObject[d].m_cageBoundaryWeights[0]*2);
-        colorObject[d] = PFP2::VEC4(color[0], color[1], color[2], 1.f);
+//        color = Utils::color_map_BCGYR(spacePointObject[d].m_cageBoundaryWeights[0]*2);
+//        colorObject[d] = PFP2::VEC4(color[0], color[1], color[2], 1.f);
     }
 
     m_colorVBO->updateData(colorObject);
@@ -495,78 +495,22 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
 void Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>& weights, Dart beginningDart,
                                                             std::vector<PFP2::REAL>& boundaryWeights, PFP2::MAP* cage)
 {
-    PFP2::REAL sumCur(0.);
+    int i = 0;
 
     Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, beginningDart);
-
-    int i = 0, j = 0;
-
-    DartMarker marker(*cage);
-
-    Dart d2;
-    int researchedVertex = -1;
-
-    bool stop = false, restart = false;
-
-    do
+    for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end(); d = trav_vert_face_cage.next())
     {
-        sumCur = 0.;
-        stop = false;
-        restart = false;
-        j = 0;
-        researchedVertex = -1;
-
-        for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end() && !stop;)
+        if(cage->vertexDegree(d) > 2)
         {
-            if(cage->vertexDegree(d) > 2)
-            {
-                //Si le sommet est incident à plus de 3 arêtes (plus d'une face)
-                d2 = cage->phi2(d);
-                if(researchedVertex == -1)
-                {
-                    //On cherche une autre bordure commune
-                    if(!cage->isBoundaryMarked2(d2))
-                    {
-                        if(!marker.isMarked(d2))
-                        {
-                            //Si la bordure courante n'a pas encore été considérée
-                            researchedVertex = cage->getEmbedding<VERTEX>(d2);
-                            marker.markOrbit<FACE>(d2);
-                            sumCur += weights(0, j);
-                            restart = true;
-                        }
-                    }
-                }
-                else
-                {
-                    if(cage->getEmbedding<VERTEX>(d) == researchedVertex)
-                    {
-                        //On a trouvé le deuxième sommet composant l'arête de la bordure courante
-                        sumCur += weights(0, j);
-                        stop = true;
-                    }
-                }
-            }
-
-            if(restart)
-            {
-                d = trav_vert_face_cage.begin();
-                restart = false;
-                j = 0;
-            }
-            else
-            {
-                d = trav_vert_face_cage.next();
-                ++j;
-            }
+            //Si le sommet est incident à plus de 3 arêtes (plus d'une face)
+            boundaryWeights[i] = smoothingFunction(1.f - weights(0, i));
         }
-
-        if(researchedVertex != -1)
+        else
         {
-            boundaryWeights[i] = smoothingFunction(1 - sumCur);
+            boundaryWeights[i] = 0.f;
         }
         ++i;
-    } while(researchedVertex != -1);
+    }
 }
 
 PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL x, const PFP2::REAL h)
