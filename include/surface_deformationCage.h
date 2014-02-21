@@ -21,7 +21,7 @@ namespace CGoGN
 namespace SCHNApps
 {
 
-#define M_H 1.f
+#define M_H 0.6f
 
 class Surface_DeformationCage_Plugin : public PluginInteraction
 {
@@ -72,9 +72,9 @@ private :
     void boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>& weights, Dart beginningDart,
                                 std::vector<PFP2::REAL>& boundaryWeights, PFP2::MAP* cage);
 
-    PFP2::REAL smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h = M_H);
+    PFP2::REAL smoothingFunction(const PFP2::REAL x, const PFP2::REAL h = M_H);
 
-    bool isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max);
+    bool isInCage(const PFP2::VEC3& point, const PFP2::VEC3& min, const PFP2::VEC3& max);
 
 private slots:
 	void mapAdded(MapHandlerGen* map);

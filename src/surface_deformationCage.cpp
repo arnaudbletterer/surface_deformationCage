@@ -145,11 +145,11 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                         adjCageCoordinatesEigen(j, 1) = positionCage[dd][1];
                         ++j;
                     }
-                    objectPositionEigen = (adjCageWeightsEigen * adjCageCoordinatesEigen);
+                    objectPositionEigen = spacePointObject[d].m_cageBoundaryWeights[i] * (adjCageWeightsEigen * adjCageCoordinatesEigen);
                     totalBoundaries *= spacePointObject[d].m_cageBoundaryWeights[i];
                 }
 
-                //objectPositionEigen += (1 - totalBoundaries) * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
+                objectPositionEigen += (1 - totalBoundaries) * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
 
                 positionObject[d][0] = objectPositionEigen(0, 0);
                 positionObject[d][1] = objectPositionEigen(0, 1);
@@ -404,7 +404,7 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
         {
             //On calcule les coordonnées de façon normale
             weights(0, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage);
-            sumMVC += fabs(weights(0, i));
+            sumMVC += weights(0, i);
         }
         ++i;
     }
@@ -463,26 +463,31 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
 {
     PFP2::REAL res;
 
-    PFP2::VEC3 vi = positionCage[current];
-    PFP2::VEC3 vj = positionCage[next];
-    PFP2::VEC3 vk = positionCage[previous];
+    PFP2::VEC3 c = positionCage[current];
+    PFP2::VEC3 c_prev = positionCage[previous];
+    PFP2::VEC3 c_next = positionCage[next];
 
-    bool negativeAngle_prev = Geom::testOrientation2D(pt, vk, vi) == Geom::RIGHT;
-    bool negativeAngle_next = Geom::testOrientation2D(pt, vi, vj) == Geom::RIGHT;
+    bool positiveAngle_prev = Geom::testOrientation2D(pt, c_prev, c) == Geom::LEFT;
+    bool positiveAngle_next = Geom::testOrientation2D(pt, c, c_next) == Geom::LEFT;
 
-    PFP2::REAL Bij = Geom::angle((vi-pt), (vj-pt));
-    PFP2::REAL Bki = Geom::angle((vk-pt), (vi-pt));
+    PFP2::VEC3 v = c - pt ;
+    PFP2::VEC3 v_prev = c_prev - pt ;
+    PFP2::VEC3 v_next = c_next - pt ;
 
-    if(negativeAngle_prev)
+    PFP2::REAL B_prev = Geom::angle(v_prev, v);
+    PFP2::REAL B_next = Geom::angle(v, v_next);
+
+    if(!positiveAngle_prev)
     {
-        Bij *= -1;
-    }
-    if(negativeAngle_next)
-    {
-        Bki *= -1;
+        B_prev *= -1;
     }
 
-    res = (tan(Bij/2.f) + (tan(Bki/2.f))) /((pt-vi).norm());
+    if(!positiveAngle_next)
+    {
+        B_next *= -1;
+    }
+
+    res = (tan(B_prev/2.f) + (tan(B_next/2.f))) / v.norm();
 
     return res;
 }
@@ -564,7 +569,7 @@ void Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::Matrix<
     } while(researchedVertex != -1);
 }
 
-PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL& x, const PFP2::REAL& h)
+PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL x, const PFP2::REAL h)
 {
     if(x >= h)
     {
@@ -582,7 +587,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL& x
     return 0.;
 }
 
-bool Surface_DeformationCage_Plugin::isInCage(PFP2::VEC3 point, PFP2::VEC3 min, PFP2::VEC3 max)
+bool Surface_DeformationCage_Plugin::isInCage(const PFP2::VEC3& point, const PFP2::VEC3& min, const PFP2::VEC3& max)
 {
     if(point[0]+(FLT_EPSILON*10000) > min[0] && point[1]+(FLT_EPSILON*10000) > min[1]
             && point[0]-(FLT_EPSILON*10000) < max[0] && point[1]-(FLT_EPSILON*10000) < max[1])
