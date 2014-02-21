@@ -222,74 +222,17 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 
         PFP2::VEC3 min, max;
 
-        TraversorF<PFP2::MAP> trav_face_cage(*cage);
-        for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
+        TraversorV<PFP2::MAP> trav_vert_object(*object);
+        for(Dart d = trav_vert_object.begin(); d != trav_vert_object.end(); d = trav_vert_object.next())
         {
-            if(!cage->isBoundaryMarked2(d))
+            TraversorF<PFP2::MAP> trav_face_cage(*cage);
+            for(Dart dd = trav_face_cage.begin(); dd != trav_face_cage.end(); dd = trav_face_cage.next())
             {
-                min = max = PFP2::VEC3();
-
-                Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, d);
-                for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
+                if(!cage->isBoundaryMarked2(dd))
                 {
-                    if(positionCage[dd][0] < min[0])
-                    {
-                        min[0] = positionCage[dd][0];
-                    }
-                    if(positionCage[dd][1] < min[1])
-                    {
-                        min[1] = positionCage[dd][1];
-                    }
-                    if(positionCage[dd][0] > max[0])
-                    {
-                        max[0] = positionCage[dd][0];
-                    }
-                    if(positionCage[dd][1] > max[1])
-                    {
-                        max[1] = positionCage[dd][1];
-                    }
-                }
-
-                DartMarker marker(*cage);
-                marker.markOrbit<FACE>(d);
-                std::vector<Dart> adjCages;
-                adjCages.reserve(cage->faceDegree(d));
-                Dart startingDart = d;
-                do
-                {
-                    Dart currentDart = startingDart;
-                    do
-                    {
-                        if(!cage->isBoundaryMarked2(currentDart) && !marker.isMarked(currentDart))
-                        {
-                            marker.markOrbit<FACE>(currentDart);
-                            adjCages.push_back(currentDart);
-                        }
-                        currentDart = cage->phi<21>(currentDart);
-                    } while(currentDart != startingDart);
-
-                    startingDart = cage->phi1(startingDart);
-                } while(startingDart != d);
-
-                TraversorV<PFP2::MAP> trav_vert_object(*object);
-                for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
-                {
-                    if(!spacePointObject[dd].isInitialized() && isInCage(positionObject[dd], min, max))
-                    {
-                        //Si le sommet n'était pas encore associé à une cage
-                        spacePointObject[dd].setCage(d);
-                        spacePointObject[dd].setCageNbV(cage->faceDegree(d));
-                        spacePointObject[dd].setAdjacentCages(adjCages);
-
-                        computePointMVCFromCage(dd, positionObject, positionCage, spacePointObject[dd].m_cageWeightsEigen, cage, d, cage->faceDegree(d));
-
-                        //On calcule les coordonnées du point de l'espace courant pour chacune des cages adjacentes
-                        for(unsigned int j=0; j<adjCages.size(); ++j)
-                        {
-                            computePointMVCFromCage(dd, positionObject, positionCage, spacePointObject[dd].m_adjCagesWeights[j], cage,
-                                                    spacePointObject[dd].m_adjCagesDart[j], cage->faceDegree(spacePointObject[dd].m_adjCagesDart[j]));
-                        }
-                    }
+                    spacePointObject[d].setCage(dd);
+                    spacePointObject[d].setCageNbV(cage->faceDegree(dd));
+                    computePointMVCFromCage(d, positionObject, positionCage, spacePointObject[d].m_cageWeightsEigen, cage, dd, cage->faceDegree(dd));
                 }
             }
         }
@@ -315,8 +258,8 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
     {
         boundaryWeightFunction(spacePointObject[d].m_cageWeightsEigen, spacePointObject[d].getCageDart(),
                                spacePointObject[d].m_cageBoundaryWeights, cage);
-        color = Utils::color_map_BCGYR(spacePointObject[d].m_cageBoundaryWeights[0]*2);
-        colorObject[d] = PFP2::VEC4(color[0], color[1], color[2], 1.f);
+//        color = Utils::color_map_BCGYR(spacePointObject[d].m_cageBoundaryWeights[0]*2);
+//        colorObject[d] = PFP2::VEC4(color[0], color[1], color[2], 1.f);
     }
 
     m_colorVBO->updateData(colorObject);
