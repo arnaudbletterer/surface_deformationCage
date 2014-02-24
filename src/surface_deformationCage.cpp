@@ -127,6 +127,9 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                 objectPositionEigen.setZero(1, 2);
                 float totalBoundaries(0.);
 
+                std::vector<Eigen::Matrix<float, 1, 2> > objectPositionEigens;
+                objectPositionEigens.reserve(spacePointObject[d].m_adjCagesDart.size());
+
                 //On récupère les positions des sommets des cages adjacentes
                 for(i = 0; i < spacePointObject[d].m_adjCagesDart.size(); ++i)
                 {
@@ -145,8 +148,9 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                         adjCageCoordinatesEigen(j, 1) = positionCage[dd][1];
                         ++j;
                     }
-                    objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[i] * (adjCageWeightsEigen * adjCageCoordinatesEigen);
-                    totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i];
+                    objectPositionEigens.push_back((spacePointObject[d].m_cageBoundaryWeights[i] / spacePointObject[d].m_adjCagesDart.size())
+                                                   * adjCageWeightsEigen * adjCageCoordinatesEigen);
+                    totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i] / spacePointObject[d].m_adjCagesDart.size();
                 }
 
                 objectPositionEigen += (1 - totalBoundaries) * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
