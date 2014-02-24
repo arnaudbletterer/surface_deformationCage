@@ -318,8 +318,8 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             }
         }
 
-        mh_cage->notifyAttributeModification(positionCage);     //JUSTE POUR DEBUG SANS DEPLACER DE SOMMETS DE CAGE
         computeBoundaryWeights(cage, object);
+        mh_cage->notifyAttributeModification(positionCage);     //JUSTE POUR DEBUG SANS DEPLACER DE SOMMETS DE CAGE
     }
 }
 
@@ -337,13 +337,6 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
     {
         boundaryWeightFunction(spacePointObject[d].m_cageWeightsEigen, spacePointObject[d].getCageDart(),
                                spacePointObject[d].m_cageBoundaryWeights, cage);
-
-        CGoGNout << "-----" << CGoGNendl;
-        for(int i=0; i<spacePointObject[d].m_cageBoundaryWeights.size(); ++i)
-        {
-            CGoGNout << spacePointObject[d].m_cageBoundaryWeights[i] << " ; " << CGoGNflush;
-        }
-        CGoGNout << CGoGNendl;
     }
 
     m_colorVBO->updateData(colorObject);

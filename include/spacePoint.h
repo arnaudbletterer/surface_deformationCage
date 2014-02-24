@@ -34,7 +34,7 @@ public :
     void setCageNbV(int n)
     {
         m_cageWeightsEigen.setZero(n);
-        m_cageBoundaryWeights.resize(n);
+        m_cageBoundaryWeights.reserve(n);
     }
 
     void setNbAdjCages(int n)
