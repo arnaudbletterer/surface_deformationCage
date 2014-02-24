@@ -76,6 +76,27 @@ private :
 
     bool isInCage(const PFP2::VEC3& point, const PFP2::VEC3& min, const PFP2::VEC3& max);
 
+    bool areCagesSharingEdge(PFP2::MAP* cage, Dart d1, Dart d2)
+    {
+        Dart currentDart1, currentDart2;
+        currentDart1 = d1;
+        do
+        {
+            currentDart2 = d2;
+            do
+            {
+                if(cage->sameEdge(currentDart1, currentDart2))
+                {
+                    return true;
+                }
+                currentDart2 = cage->phi1(currentDart2);
+            } while(currentDart2 != d2);
+            currentDart1 = cage->phi1(currentDart1);
+        } while(currentDart1 != d1);
+
+        return false;
+    }
+
 private slots:
 	void mapAdded(MapHandlerGen* map);
 	void mapRemoved(MapHandlerGen* map);

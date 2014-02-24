@@ -126,11 +126,11 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                 Eigen::Matrix<float, 1, 2> objectPositionEigen;
                 objectPositionEigen.setZero(1, 2);
                 float totalBoundaries(0.);
+                float mulBoundaries(1.);
 
-                std::vector<Eigen::Matrix<float, 1, 2> > objectPositionEigens;
-                objectPositionEigens.reserve(spacePointObject[d].m_adjCagesDart.size());
+                std::vector<Eigen::Matrix<float, 1, 2> > adjCagesPositionEigens;
+                adjCagesPositionEigens.reserve(spacePointObject[d].m_adjCagesDart.size());
 
-                //On récupère les positions des sommets des cages adjacentes
                 for(i = 0; i < spacePointObject[d].m_adjCagesDart.size(); ++i)
                 {
                     Eigen::Matrix<float, Eigen::Dynamic, 2> adjCageCoordinatesEigen;
@@ -148,10 +148,30 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                         adjCageCoordinatesEigen(j, 1) = positionCage[dd][1];
                         ++j;
                     }
-                    objectPositionEigens.push_back((spacePointObject[d].m_cageBoundaryWeights[i] / spacePointObject[d].m_adjCagesDart.size())
-                                                   * adjCageWeightsEigen * adjCageCoordinatesEigen);
-                    totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i] / spacePointObject[d].m_adjCagesDart.size();
+
+                    adjCagesPositionEigens.push_back(adjCageWeightsEigen * adjCageCoordinatesEigen);
+                    totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i];
+                    mulBoundaries *= spacePointObject[d].m_cageBoundaryWeights[i];
                 }
+
+                int j = 0;
+
+                for(i = 0; i < spacePointObject[d].m_adjCagesDart.size(); ++i)
+                {
+                    if(areCagesSharingEdge(cage, spacePointObject[d].getCageDart(), spacePointObject[d].m_adjCagesDart[i]))
+                    {
+                        //Les cages sont adjacentes à travers une arête commune
+                        objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[j] * adjCagesPositionEigens[i];
+                        ++j;
+                    }
+                    else
+                    {
+                        objectPositionEigen += mulBoundaries * adjCagesPositionEigens[i];
+                        totalBoundaries += mulBoundaries;
+                    }
+                }
+
+                totalBoundaries /= spacePointObject[d].m_adjCagesDart.size();
 
                 objectPositionEigen += (1 - totalBoundaries) * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
 
@@ -313,14 +333,17 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
         colorObject = object->addAttribute<PFP2::VEC4, VERTEX>("color");
     }
 
-    PFP2::VEC3 color;
-
     for(Dart d = trav_vert_object.begin(); d != trav_vert_object.end(); d = trav_vert_object.next())
     {
         boundaryWeightFunction(spacePointObject[d].m_cageWeightsEigen, spacePointObject[d].getCageDart(),
                                spacePointObject[d].m_cageBoundaryWeights, cage);
-//        color = Utils::color_map_BCGYR(spacePointObject[d].m_cageBoundaryWeights[0]*2);
-//        colorObject[d] = PFP2::VEC4(color[0], color[1], color[2], 1.f);
+
+        CGoGNout << "-----" << CGoGNendl;
+        for(int i=0; i<spacePointObject[d].m_cageBoundaryWeights.size(); ++i)
+        {
+            CGoGNout << spacePointObject[d].m_cageBoundaryWeights[i] << " ; " << CGoGNflush;
+        }
+        CGoGNout << CGoGNendl;
     }
 
     m_colorVBO->updateData(colorObject);
@@ -499,22 +522,78 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
 void Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>& weights, Dart beginningDart,
                                                             std::vector<PFP2::REAL>& boundaryWeights, PFP2::MAP* cage)
 {
-    int i = 0;
+    PFP2::REAL sumCur(0.);
 
     Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, beginningDart);
-    for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end(); d = trav_vert_face_cage.next())
+
+    int i = 0, j = 0;
+
+    DartMarker marker(*cage);
+
+    Dart d2;
+    int researchedVertex = -1;
+
+    bool stop = false, restart = false;
+
+    do
     {
-        if(cage->vertexDegree(d) > 2)
+        sumCur = 0.;
+        stop = false;
+        restart = false;
+        j = 0;
+        researchedVertex = -1;
+
+        for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end() && !stop;)
         {
-            //Si le sommet est incident à plus de 3 arêtes (plus d'une face)
-            boundaryWeights[i] = smoothingFunction(1.f - weights(0, i));
+            if(cage->vertexDegree(d) > 2)
+            {
+                //Si le sommet est incident à plus de 3 arêtes (plus d'une face)
+                d2 = cage->phi2(d);
+                if(researchedVertex == -1)
+                {
+                    //On cherche une autre bordure commune
+                    if(!cage->isBoundaryMarked2(d2))
+                    {
+                        if(!marker.isMarked(d2))
+                        {
+                            //Si la bordure courante n'a pas encore été considérée
+                            researchedVertex = cage->getEmbedding<VERTEX>(d2);
+                            marker.markOrbit<FACE>(d2);
+                            sumCur += weights(0, j);
+                            restart = true;
+                        }
+                    }
+                }
+                else
+                {
+                    if(cage->getEmbedding<VERTEX>(d) == researchedVertex)
+                    {
+                        //On a trouvé le deuxième sommet composant l'arête de la bordure courante
+                        sumCur += weights(0, j);
+                        stop = true;
+                    }
+                }
+            }
+
+            if(restart)
+            {
+                d = trav_vert_face_cage.begin();
+                restart = false;
+                j = 0;
+            }
+            else
+            {
+                d = trav_vert_face_cage.next();
+                ++j;
+            }
         }
-        else
+
+        if(researchedVertex != -1)
         {
-            boundaryWeights[i] = 0.f;
+            boundaryWeights[i] = smoothingFunction(1 - sumCur);
         }
         ++i;
-    }
+    } while(researchedVertex != -1);
 }
 
 PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL x, const PFP2::REAL h)
