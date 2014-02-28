@@ -220,9 +220,13 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             mh_object->registerAttribute(spacePointObject);
         }
 
+        CGoGNStream::Out fichier;
+        fichier.toFile("/home/bletterer/plot3d_coordinates_inside.gp");
+
         TraversorV<PFP2::MAP> trav_vert_object(*object);
         for(Dart d = trav_vert_object.begin(); d != trav_vert_object.end(); d = trav_vert_object.next())
         {
+            int i = 0;
             TraversorF<PFP2::MAP> trav_face_cage(*cage);
             for(Dart dd = trav_face_cage.begin(); dd != trav_face_cage.end(); dd = trav_face_cage.next())
             {
@@ -231,9 +235,39 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                     spacePointObject[d].setCage(dd);
                     spacePointObject[d].setCageNbV(cage->faceDegree(dd));
                     computePointMVCFromCage(d, positionObject, positionCage, spacePointObject[d].m_cageWeightsEigen, cage, dd, cage->faceDegree(dd));
+                    if(i==0)
+                    {
+                        fichier << positionObject[d][0] << " " << positionObject[d][1] << " " << spacePointObject[d].m_cageWeightsEigen(0, i) << CGoGNendl;
+                    }
                 }
+                ++i;
             }
         }
+
+        fichier.close();
+
+        fichier.toFile("/home/bletterer/plot3d_cage_inside.gp");
+
+        TraversorF<PFP2::MAP> trav_face_cage(*cage);
+        for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
+        {
+            if(!cage->isBoundaryMarked2(d))
+            {
+                int i = 0;
+                Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, d);
+                for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
+                {
+                    if(i==0)
+                        fichier << positionCage[dd][0] << " " << positionCage[dd][1] << " " << 1 << CGoGNendl;
+                    else
+                        fichier << positionCage[dd][0] << " " << positionCage[dd][1] << " " << 0 << CGoGNendl;
+                    ++i;
+                }
+                fichier << positionCage[trav_vert_face_cage.begin()][0] << " " << positionCage[trav_vert_face_cage.begin()][1] << " " << 1 << CGoGNendl;
+            }
+        }
+
+        fichier.close();
 
         mh_cage->notifyAttributeModification(positionCage);     //JUSTE POUR DEBUG SANS DEPLACER DE SOMMETS DE CAGE
         computeBoundaryWeights(cage, object);
@@ -256,8 +290,6 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
     {
         boundaryWeightFunction(spacePointObject[d].m_cageWeightsEigen, spacePointObject[d].getCageDart(),
                                spacePointObject[d].m_cageBoundaryWeights, cage);
-//        color = Utils::color_map_BCGYR(spacePointObject[d].m_cageBoundaryWeights[0]*2);
-//        colorObject[d] = PFP2::VEC4(color[0], color[1], color[2], 1.f);
     }
 
     m_colorVBO->updateData(colorObject);
