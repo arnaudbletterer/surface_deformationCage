@@ -151,7 +151,10 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
 
                     adjCagesPositionEigens.push_back(adjCageWeightsEigen * adjCageCoordinatesEigen);
                     totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i];
-                    mulBoundaries *= spacePointObject[d].m_cageBoundaryWeights[i];
+                    if(areCagesSharingEdge(cage, spacePointObject[d].getCageDart(), spacePointObject[d].m_adjCagesDart[i]))
+                    {
+                        mulBoundaries *= spacePointObject[d].m_cageBoundaryWeights[i];
+                    }
                 }
 
                 int j = 0;
@@ -170,6 +173,8 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                         totalBoundaries += mulBoundaries;
                     }
                 }
+
+                objectPositionEigen /= spacePointObject[d].m_adjCagesDart.size();
 
                 totalBoundaries /= spacePointObject[d].m_adjCagesDart.size();
 
