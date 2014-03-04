@@ -34,12 +34,12 @@ public :
     void setCageNbV(int n)
     {
         m_cageWeightsEigen.setZero(n);
-        m_cageBoundaryWeights.reserve(n);
     }
 
     void setNbAdjCages(int n)
     {
         m_adjCagesWeights.resize(n);
+        m_cageBoundaryWeights.resize(n);
     }
 
     void setCage(Dart d)

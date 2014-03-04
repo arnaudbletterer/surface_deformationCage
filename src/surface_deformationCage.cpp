@@ -150,22 +150,19 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                     }
 
                     adjCagesPositionEigens.push_back(adjCageWeightsEigen * adjCageCoordinatesEigen);
-                    totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i];
                     if(areCagesSharingEdge(cage, spacePointObject[d].getCageDart(), spacePointObject[d].m_adjCagesDart[i]))
                     {
+                        totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i];
                         mulBoundaries *= spacePointObject[d].m_cageBoundaryWeights[i];
                     }
                 }
-
-                int j = 0;
 
                 for(i = 0; i < spacePointObject[d].m_adjCagesDart.size(); ++i)
                 {
                     if(areCagesSharingEdge(cage, spacePointObject[d].getCageDart(), spacePointObject[d].m_adjCagesDart[i]))
                     {
                         //Les cages sont adjacentes à travers une arête commune
-                        objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[j] * adjCagesPositionEigens[i];
-                        ++j;
+                        objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[i] * adjCagesPositionEigens[i];
                     }
                     else
                     {
@@ -174,11 +171,17 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                     }
                 }
 
-                objectPositionEigen /= spacePointObject[d].m_adjCagesDart.size();
+                if(totalBoundaries > FLT_EPSILON)
+                {
+                    objectPositionEigen *= mulBoundaries / totalBoundaries;
+                }
 
-                totalBoundaries /= spacePointObject[d].m_adjCagesDart.size();
+//                totalBoundaries /= spacePointObject[d].m_adjCagesDart.size();
+//                totalBoundaries = smoothingFunction(totalBoundaries);
+//                objectPositionEigen /= totalBoundaries;
 
-                objectPositionEigen += (1 - totalBoundaries) * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
+                //Coordonnées de la cage locale
+                objectPositionEigen += (1 - mulBoundaries) * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
 
                 positionObject[d][0] = objectPositionEigen(0, 0);
                 positionObject[d][1] = objectPositionEigen(0, 1);
@@ -441,7 +444,6 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
             weights(0, i) /= sumMVC;
         }
     }
-
 }
 
 PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& positionCage)
@@ -543,7 +545,7 @@ void Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::Matrix<
 
         for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end() && !stop;)
         {
-            if(cage->vertexDegree(d) > 2)
+            if(cage->vertexDegree(d) > 2 && !cage->isBoundaryMarked2(d))
             {
                 //Si le sommet est incident à plus de 3 arêtes (plus d'une face)
                 d2 = cage->phi2(d);
@@ -601,7 +603,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL x,
         return 0.f;
     }
 
-    if(h > FLT_EPSILON*10000)
+    if(h > FLT_EPSILON)
     {
         return (1/4. * std::cos(M_PI*(x/h)) + 1/4.);
         //return (1/4. * std::sin(M_PI*(x/h-1/2.)) + 1/4.);
