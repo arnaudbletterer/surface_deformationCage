@@ -18,7 +18,7 @@ public :
     Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic> m_cageWeightsEigen;
     std::vector<Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic> > m_adjCagesWeights;
 
-    std::vector<PFP2::REAL> m_cageBoundaryWeights;
+    QMap<int, PFP2::REAL> m_cageBoundaryWeights;
     std::vector<Dart> m_adjCagesDart;
 
 private :
@@ -34,7 +34,6 @@ public :
     void setCageNbV(int n)
     {
         m_cageWeightsEigen.setZero(n);
-        m_cageBoundaryWeights.reserve(n);
     }
 
     void setNbAdjCages(int n)
