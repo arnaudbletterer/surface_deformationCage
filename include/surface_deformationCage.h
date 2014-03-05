@@ -21,7 +21,7 @@ namespace CGoGN
 namespace SCHNApps
 {
 
-#define M_H 0.2f
+#define M_H 0.5f
 
 class Surface_DeformationCage_Plugin : public PluginInteraction
 {
@@ -76,7 +76,7 @@ private :
 
     bool isInCage(const PFP2::VEC3& point, const PFP2::VEC3& min, const PFP2::VEC3& max);
 
-    bool areCagesSharingEdge(PFP2::MAP* cage, Dart d1, Dart d2)
+    bool areFacesSharingEdge(PFP2::MAP* cage, Dart d1, Dart d2)
     {
         Dart currentDart1, currentDart2;
         currentDart1 = d1;

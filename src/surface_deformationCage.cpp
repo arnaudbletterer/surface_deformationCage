@@ -131,6 +131,8 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                 std::vector<Eigen::Matrix<float, 1, 2> > adjCagesPositionEigens;
                 adjCagesPositionEigens.reserve(spacePointObject[d].m_adjCagesDart.size());
 
+                int k = 0;
+
                 for(i = 0; i < spacePointObject[d].m_adjCagesDart.size(); ++i)
                 {
                     Eigen::Matrix<float, Eigen::Dynamic, 2> adjCageCoordinatesEigen;
@@ -150,19 +152,23 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                     }
 
                     adjCagesPositionEigens.push_back(adjCageWeightsEigen * adjCageCoordinatesEigen);
-                    if(areCagesSharingEdge(cage, spacePointObject[d].getCageDart(), spacePointObject[d].m_adjCagesDart[i]))
+                    if(areFacesSharingEdge(cage, spacePointObject[d].getCageDart(), spacePointObject[d].m_adjCagesDart[i]))
                     {
-                        totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i];
-                        mulBoundaries *= spacePointObject[d].m_cageBoundaryWeights[i];
+                        totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[k];
+                        mulBoundaries *= spacePointObject[d].m_cageBoundaryWeights[k];
+                        ++k;
                     }
                 }
 
+                k = 0;
+
                 for(i = 0; i < spacePointObject[d].m_adjCagesDart.size(); ++i)
                 {
-                    if(areCagesSharingEdge(cage, spacePointObject[d].getCageDart(), spacePointObject[d].m_adjCagesDart[i]))
+                    if(areFacesSharingEdge(cage, spacePointObject[d].getCageDart(), spacePointObject[d].m_adjCagesDart[i]))
                     {
                         //Les cages sont adjacentes à travers une arête commune
-                        objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[i] * adjCagesPositionEigens[i];
+                        objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[k] * adjCagesPositionEigens[i];
+                        ++k;
                     }
                     else
                     {
@@ -171,17 +177,14 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                     }
                 }
 
-                if(totalBoundaries > FLT_EPSILON)
-                {
-                    objectPositionEigen *= mulBoundaries / totalBoundaries;
-                }
+                objectPositionEigen /= spacePointObject[d].m_adjCagesDart.size()+1;
 
 //                totalBoundaries /= spacePointObject[d].m_adjCagesDart.size();
 //                totalBoundaries = smoothingFunction(totalBoundaries);
 //                objectPositionEigen /= totalBoundaries;
 
                 //Coordonnées de la cage locale
-                objectPositionEigen += (1 - mulBoundaries) * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
+                objectPositionEigen += (1 - totalBoundaries/(spacePointObject[d].m_adjCagesDart.size()+1)) * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
 
                 positionObject[d][0] = objectPositionEigen(0, 0);
                 positionObject[d][1] = objectPositionEigen(0, 1);
@@ -605,7 +608,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL x,
 
     if(h > FLT_EPSILON)
     {
-        return (1/4. * std::cos(M_PI*(x/h)) + 1/4.);
+        return (1/2. * std::cos(M_PI*(x/h)) + 1/2.);
         //return (1/4. * std::sin(M_PI*(x/h-1/2.)) + 1/4.);
         //return -2*(x/h)*(x/h)*(x/h) + 3*(x/h)*(x/h);
         //return -8*(x/h)*(x/h)*(x/h)*(x/h)*(x/h) + 20*(x/h)*(x/h)*(x/h)*(x/h) - 18*(x/h)*(x/h)*(x/h) + 7*(x/h)*(x/h);
