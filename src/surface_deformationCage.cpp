@@ -110,7 +110,7 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
             TraversorV<PFP2::MAP> trav_vert_object(*object);
             for(Dart d = trav_vert_object.begin(); d != trav_vert_object.end(); d = trav_vert_object.next())
             {
-                Eigen::Matrix<float, Eigen::Dynamic, 2> cageCoordinatesEigen;
+                Eigen::Matrix<PFP2::REAL, Eigen::Dynamic, 2> cageCoordinatesEigen;
                 cageCoordinatesEigen.setZero(cage->faceDegree(spacePointObject[d].getCageDart()), 2);
 
                 //On récupère les positions des sommets de la cage locale
@@ -123,20 +123,20 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                     ++i;
                 }
 
-                Eigen::Matrix<float, 1, 2> objectPositionEigen;
+                Eigen::Matrix<PFP2::REAL, 1, 2> objectPositionEigen;
                 objectPositionEigen.setZero(1, 2);
-                float totalBoundaries(0.);
-                float mulBoundaries(1.);
+                PFP2::REAL totalBoundaries(0.);
+                PFP2::REAL mulBoundaries(1.);
 
-                std::vector<Eigen::Matrix<float, 1, 2> > adjCagesPositionEigens;
+                std::vector<Eigen::Matrix<PFP2::REAL, 1, 2> > adjCagesPositionEigens;
                 adjCagesPositionEigens.reserve(spacePointObject[d].m_adjCagesDart.size());
 
                 int k = 0;
 
                 for(i = 0; i < spacePointObject[d].m_adjCagesDart.size(); ++i)
                 {
-                    Eigen::Matrix<float, Eigen::Dynamic, 2> adjCageCoordinatesEigen;
-                    Eigen::Matrix<float, 1, Eigen::Dynamic> adjCageWeightsEigen;
+                    Eigen::Matrix<PFP2::REAL, Eigen::Dynamic, 2> adjCageCoordinatesEigen;
+                    Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic> adjCageWeightsEigen;
                     adjCageCoordinatesEigen.setZero(spacePointObject[d].m_adjCagesWeights[i].cols(), 2);
                     adjCageWeightsEigen.setZero(1, spacePointObject[d].m_adjCagesWeights[i].cols());
 
@@ -167,21 +167,18 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                     if(areFacesSharingEdge(cage, spacePointObject[d].getCageDart(), spacePointObject[d].m_adjCagesDart[i]))
                     {
                         //Les cages sont adjacentes à travers une arête commune
-                        objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[k] * adjCagesPositionEigens[i];
+                        objectPositionEigen += (spacePointObject[d].m_cageBoundaryWeights[k] * adjCagesPositionEigens[i]);
                         ++k;
                     }
                     else
                     {
+                        //Les cages sont adjacentes à travers un sommet commun
                         objectPositionEigen += mulBoundaries * adjCagesPositionEigens[i];
                         totalBoundaries += mulBoundaries;
                     }
                 }
 
                 objectPositionEigen /= spacePointObject[d].m_adjCagesDart.size()+1;
-
-//                totalBoundaries /= spacePointObject[d].m_adjCagesDart.size();
-//                totalBoundaries = smoothingFunction(totalBoundaries);
-//                objectPositionEigen /= totalBoundaries;
 
                 //Coordonnées de la cage locale
                 objectPositionEigen += (1 - totalBoundaries/(spacePointObject[d].m_adjCagesDart.size()+1)) * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
@@ -362,7 +359,7 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
   */
 void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                                              const VertexAttribute<PFP2::VEC3>& positionCage,
-                                                             Eigen::Matrix<float, 1, Eigen::Dynamic>& weights,
+                                                             Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic>& weights,
                                                              PFP2::MAP* cage, Dart beginningDart, int cageNbV)
 {
     PFP2::REAL sumMVC(0.);
@@ -522,7 +519,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     return res;
 }
 
-void Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>& weights, Dart beginningDart,
+void Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic>& weights, Dart beginningDart,
                                                             std::vector<PFP2::REAL>& boundaryWeights, PFP2::MAP* cage)
 {
     PFP2::REAL sumCur(0.);
@@ -609,6 +606,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL x,
     if(h > FLT_EPSILON)
     {
         return (1/2. * std::cos(M_PI*(x/h)) + 1/2.);
+        //return (1/4. * std::cos(M_PI*(x/h)) + 1/4.);
         //return (1/4. * std::sin(M_PI*(x/h-1/2.)) + 1/4.);
         //return -2*(x/h)*(x/h)*(x/h) + 3*(x/h)*(x/h);
         //return -8*(x/h)*(x/h)*(x/h)*(x/h)*(x/h) + 20*(x/h)*(x/h)*(x/h)*(x/h) - 18*(x/h)*(x/h)*(x/h) + 7*(x/h)*(x/h);
