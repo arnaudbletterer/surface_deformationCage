@@ -47,18 +47,18 @@ void Surface_DeformationCage_Plugin::disable()
 
 void Surface_DeformationCage_Plugin::drawMap(View *view, MapHandlerGen *map)
 {
-    if(m_toDraw && m_schnapps->getSelectedView() == view)
-    {
-        //If VBO are initialized
-        glPolygonMode(GL_FRONT, GL_FILL);
-        glEnable(GL_LIGHTING);
-        glEnable(GL_POLYGON_OFFSET_FILL);
-        m_colorPerVertexShader->setAttributePosition(m_positionVBO);
-        m_colorPerVertexShader->setAttributeColor(m_colorVBO);
-        m_colorPerVertexShader->setOpacity(1.);
-        map->draw(m_colorPerVertexShader, CGoGN::Algo::Render::GL2::TRIANGLES);
-        glDisable(GL_POLYGON_OFFSET_FILL);
-    }
+//    if(m_toDraw && m_schnapps->getSelectedView() == view)
+//    {
+//        //If VBO are initialized
+//        glPolygonMode(GL_FRONT, GL_FILL);
+//        glEnable(GL_LIGHTING);
+//        glEnable(GL_POLYGON_OFFSET_FILL);
+//        m_colorPerVertexShader->setAttributePosition(m_positionVBO);
+//        m_colorPerVertexShader->setAttributeColor(m_colorVBO);
+//        m_colorPerVertexShader->setOpacity(1.);
+//        map->draw(m_colorPerVertexShader, CGoGN::Algo::Render::GL2::TRIANGLES);
+//        glDisable(GL_POLYGON_OFFSET_FILL);
+//    }
 }
 
 void Surface_DeformationCage_Plugin::boundarySliderValueChanged(int value)
@@ -329,11 +329,11 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
 {
     TraversorV<PFP2::MAP> trav_vert_object(*object);
     VertexAttribute<SpacePoint> spacePointObject = object->getAttribute<SpacePoint, VERTEX>("SpacePoint");
-    VertexAttribute<PFP2::VEC4> colorObject = object->getAttribute<PFP2::VEC4, VERTEX>("color");
-    if(!colorObject.isValid())
-    {
-        colorObject = object->addAttribute<PFP2::VEC4, VERTEX>("color");
-    }
+//    VertexAttribute<PFP2::VEC4> colorObject = object->getAttribute<PFP2::VEC4, VERTEX>("color");
+//    if(!colorObject.isValid())
+//    {
+//        colorObject = object->addAttribute<PFP2::VEC4, VERTEX>("color");
+//    }
 
     for(Dart d = trav_vert_object.begin(); d != trav_vert_object.end(); d = trav_vert_object.next())
     {
@@ -341,10 +341,8 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
                                spacePointObject[d].m_cageBoundaryWeights, cage);
     }
 
-    m_colorVBO->updateData(colorObject);
-
-    m_toDraw = true;
-
+//    m_colorVBO->updateData(colorObject);
+//    m_toDraw = true;
     m_schnapps->getSelectedView()->updateGL();
 }
 
@@ -380,69 +378,63 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
                                                        (positionCage[d]-positionCage[prev]).norm2(),
                                                        positionObject[vertex]);
 
-//        if(distance_next < FLT_EPSILON && distance_prev < FLT_EPSILON)
-//        {
-//            //Le sommet de l'objet se situe sur le sommet courant de la cage
-//            weights.setZero(1, cageNbV);
+        if(distance_next < FLT_EPSILON && distance_prev < FLT_EPSILON)
+        {
+            //Le sommet de l'objet se situe sur le sommet courant de la cage
+            weights.setZero(1, cageNbV);
 
-//            weights(0, i) = 1.f;    //Le sommet de l'objet est entièrement dépendant du sommet courant de la cage
+            weights(0, i) = 1.f;    //Le sommet de l'objet est entièrement dépendant du sommet courant de la cage
 
-//            stop = true;
-//        }
-//        else if(distance_next < FLT_EPSILON)
-//        {
-//            //Le sommet de l'objet est sur [cur;next]
-//            weights.setZero(1, cageNbV);
+            stop = true;
+        }
+        else if(distance_next < FLT_EPSILON)
+        {
+            //Le sommet de l'objet est sur [cur;next]
+            weights.setZero(1, cageNbV);
 
-//            PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
-//                                / (positionCage[next]-positionCage[d]).norm2());
+            PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
+                                / (positionCage[next]-positionCage[d]).norm2());
 
-//            weights(0, (i+1)%cageNbV) = w;
-//            weights(0, i) = 1.f-w;
+            weights(0, (i+1)%cageNbV) = w;
+            weights(0, i) = 1.f-w;
 
-//            stop = true;
-//        }
-//        else if(distance_prev < FLT_EPSILON)
-//        {
-//            //Le sommet de l'objet est sur [cur;prev]
-//            weights.setZero(1, cageNbV);
+            stop = true;
+        }
+        else if(distance_prev < FLT_EPSILON)
+        {
+            //Le sommet de l'objet est sur [cur;prev]
+            weights.setZero(1, cageNbV);
 
-//            PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
-//                                / (positionCage[prev]-positionCage[d]).norm2());
+            PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
+                                / (positionCage[prev]-positionCage[d]).norm2());
 
-//            if(i==0)
-//            {
-//                weights(0, cageNbV-1) = w;
-//            }
-//            else
-//            {
-//                weights(0, i-1) = w;
-//            }
-//            weights(0, i) = 1.f-w;
+            if(i==0)
+            {
+                weights(0, cageNbV-1) = w;
+            }
+            else
+            {
+                weights(0, i-1) = w;
+            }
+            weights(0, i) = 1.f-w;
 
-//            stop = true;
-//        }
-//        else
-//        {
-//            //On calcule les coordonnées de façon normale
-//            weights(0, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage);
-//            sumMVC += weights(0, i);
-//        }
-        weights(0, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage);
-        sumMVC += weights(0, i);
+            stop = true;
+        }
+        else
+        {
+            //On calcule les coordonnées de façon normale
+            weights(0, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage);
+            sumMVC += weights(0, i);
+        }
         ++i;
     }
 
-//    if(!stop)
-//    {
-//        for(i=0; i<weights.cols(); ++i)
-//        {
-//            weights(0, i) /= sumMVC;
-//        }
-//    }
-    for(i=0; i<weights.cols(); ++i)
+    if(!stop)
     {
-        weights(0, i) /= sumMVC;
+        for(i=0; i<weights.cols(); ++i)
+        {
+            weights(0, i) /= sumMVC;
+        }
     }
 }
 
@@ -494,42 +486,37 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     PFP2::VEC3 c_prev = positionCage[previous];
     PFP2::VEC3 c_next = positionCage[next];
 
-    bool positiveAngle_prev = Geom::testOrientation2D(pt, c_prev, c) == Geom::LEFT;
-    bool positiveAngle_next = Geom::testOrientation2D(pt, c, c_next) == Geom::LEFT;
+//    bool positiveAngle_prev = Geom::testOrientation2D(pt, c_prev, c) == Geom::LEFT;
+//    bool positiveAngle_next = Geom::testOrientation2D(pt, c, c_next) == Geom::LEFT;
 
-    PFP2::VEC3 v = c - pt ;
-    PFP2::VEC3 v_prev = c_prev - pt ;
-    PFP2::VEC3 v_next = c_next - pt ;
+//    PFP2::VEC3 v = c - pt ;
+//    PFP2::VEC3 v_prev = c_prev - pt ;
+//    PFP2::VEC3 v_next = c_next - pt ;
 
-    PFP2::REAL B_prev = Geom::angle(v_prev, v);
-    PFP2::REAL B_next = Geom::angle(v, v_next);
+//    PFP2::REAL B_prev = Geom::angle(v_prev, v);
+//    PFP2::REAL B_next = Geom::angle(v, v_next);
 
-    if(isnan(B_prev) && isnan(B_next))
-    {
-        return 1.f;
-    }
+//    if(!positiveAngle_prev)
+//    {
+//        B_prev *= -1;
+//    }
 
-    if(isnan(B_prev))
-    {
-        return 1.f - sqrt((pt-c).norm2() / (c_prev-c).norm2());
-    }
+//    if(!positiveAngle_next)
+//    {
+//        B_next *= -1;
+//    }
 
-    if(isnan(B_next))
-    {
-        return 1.f - sqrt((pt-c).norm2() / (c_next-c).norm2());
-    }
+//    res = (tan(B_prev/2.f) + (tan(B_next/2.f))) / v.norm();
 
-    if(!positiveAngle_prev)
-    {
-        B_prev *= -1;
-    }
+    PFP2::VEC3 di = c - pt;
+    PFP2::VEC3 di_prev = c_prev - pt;
+    PFP2::VEC3 di_next = c_next - pt;
 
-    if(!positiveAngle_next)
-    {
-        B_next *= -1;
-    }
+    PFP2::REAL ri = di.norm();
+    PFP2::REAL ri_prev = di_prev.norm();
+    PFP2::REAL ri_next = di_next.norm();
 
-    res = (tan(B_prev/2.f) + (tan(B_next/2.f))) / v.norm();
+    res = sqrt( (2 * (ri_prev*ri_next - di_prev*di_next)) / ((ri_prev*ri + di_prev*di) * (ri*ri_next + di*di_next)) );
 
     return res;
 }
