@@ -370,71 +370,78 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
         next = cage->phi1(d);
         prev = cage->phi_1(d);
 
-        distance_next = Geom::squaredDistanceSeg2Point(positionCage[next], positionCage[d]-positionCage[next],
-                                                       (positionCage[d]-positionCage[next]).norm2(),
-                                                       positionObject[vertex]);
+//        distance_next = Geom::squaredDistanceSeg2Point(positionCage[next], positionCage[d]-positionCage[next],
+//                                                       (positionCage[d]-positionCage[next]).norm2(),
+//                                                       positionObject[vertex]);
 
-        distance_prev = Geom::squaredDistanceSeg2Point(positionCage[prev], positionCage[d]-positionCage[prev],
-                                                       (positionCage[d]-positionCage[prev]).norm2(),
-                                                       positionObject[vertex]);
+//        distance_prev = Geom::squaredDistanceSeg2Point(positionCage[prev], positionCage[d]-positionCage[prev],
+//                                                       (positionCage[d]-positionCage[prev]).norm2(),
+//                                                       positionObject[vertex]);
 
-        if(distance_next < FLT_EPSILON && distance_prev < FLT_EPSILON)
-        {
-            //Le sommet de l'objet se situe sur le sommet courant de la cage
-            weights.setZero(1, cageNbV);
+//        if(distance_next < FLT_EPSILON && distance_prev < FLT_EPSILON)
+//        {
+//            //Le sommet de l'objet se situe sur le sommet courant de la cage
+//            weights.setZero(1, cageNbV);
 
-            weights(0, i) = 1.f;    //Le sommet de l'objet est entièrement dépendant du sommet courant de la cage
+//            weights(0, i) = 1.f;    //Le sommet de l'objet est entièrement dépendant du sommet courant de la cage
 
-            stop = true;
-        }
-        else if(distance_next < FLT_EPSILON)
-        {
-            //Le sommet de l'objet est sur [cur;next]
-            weights.setZero(1, cageNbV);
+//            stop = true;
+//        }
+//        else if(distance_next < FLT_EPSILON)
+//        {
+//            //Le sommet de l'objet est sur [cur;next]
+//            weights.setZero(1, cageNbV);
 
-            PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
-                                / (positionCage[next]-positionCage[d]).norm2());
+//            PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
+//                                / (positionCage[next]-positionCage[d]).norm2());
 
-            weights(0, (i+1)%cageNbV) = w;
-            weights(0, i) = 1.f-w;
+//            weights(0, (i+1)%cageNbV) = w;
+//            weights(0, i) = 1.f-w;
 
-            stop = true;
-        }
-        else if(distance_prev < FLT_EPSILON)
-        {
-            //Le sommet de l'objet est sur [cur;prev]
-            weights.setZero(1, cageNbV);
+//            stop = true;
+//        }
+//        else if(distance_prev < FLT_EPSILON)
+//        {
+//            //Le sommet de l'objet est sur [cur;prev]
+//            weights.setZero(1, cageNbV);
 
-            PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
-                                / (positionCage[prev]-positionCage[d]).norm2());
+//            PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
+//                                / (positionCage[prev]-positionCage[d]).norm2());
 
-            if(i==0)
-            {
-                weights(0, cageNbV-1) = w;
-            }
-            else
-            {
-                weights(0, i-1) = w;
-            }
-            weights(0, i) = 1.f-w;
+//            if(i==0)
+//            {
+//                weights(0, cageNbV-1) = w;
+//            }
+//            else
+//            {
+//                weights(0, i-1) = w;
+//            }
+//            weights(0, i) = 1.f-w;
 
-            stop = true;
-        }
-        else
-        {
-            //On calcule les coordonnées de façon normale
-            weights(0, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage);
-            sumMVC += weights(0, i);
-        }
+//            stop = true;
+//        }
+//        else
+//        {
+//            //On calcule les coordonnées de façon normale
+//            weights(0, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage);
+//            sumMVC += weights(0, i);
+//        }
+        weights(0, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage);
+        sumMVC += weights(0, i);
         ++i;
     }
 
-    if(!stop)
+//    if(!stop)
+//    {
+//        for(i=0; i<weights.cols(); ++i)
+//        {
+//            weights(0, i) /= sumMVC;
+//        }
+//    }
+
+    for(i=0; i<weights.cols(); ++i)
     {
-        for(i=0; i<weights.cols(); ++i)
-        {
-            weights(0, i) /= sumMVC;
-        }
+        weights(0, i) /= sumMVC;
     }
 }
 
