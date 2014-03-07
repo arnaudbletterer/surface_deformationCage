@@ -64,7 +64,7 @@ private :
     PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
                           const VertexAttribute<PFP2::VEC3>& positionCage);
     PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart current, Dart next, Dart previous,
-                            const VertexAttribute<PFP2::VEC3>& positionCage);
+                            const VertexAttribute<PFP2::VEC3>& positionCage, PFP2::MAP* cage);
 
     /*
      *Fonctions de l'article
