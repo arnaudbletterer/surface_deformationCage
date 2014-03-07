@@ -379,17 +379,22 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
 //            weights(0, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage);
 //            sumMVC += weights(0, i);
 //        }
-        weights(0, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage);
+        weights(0, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage, cage);
         sumMVC += weights(0, i);
         ++i;
     }
 
-    if(!stop)
+//    if(!stop)
+//    {
+//        for(i=0; i<weights.cols(); ++i)
+//        {
+//            weights(0, i) /= sumMVC;
+//        }
+//    }
+
+    for(i=0; i<weights.cols(); ++i)
     {
-        for(i=0; i<weights.cols(); ++i)
-        {
-            weights(0, i) /= sumMVC;
-        }
+        weights(0, i) /= sumMVC;
     }
 
 }
@@ -434,16 +439,16 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart
 }
 
 PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Dart current, Dart next, Dart previous,
-                                                        const VertexAttribute<PFP2::VEC3>& positionCage)
+                                                        const VertexAttribute<PFP2::VEC3>& positionCage, PFP2::MAP* cage)
 {
     PFP2::REAL res;
 
-    PFP2::VEC3 c = positionCage[current];
-    PFP2::VEC3 c_prev = positionCage[previous];
-    PFP2::VEC3 c_next = positionCage[next];
+    const PFP2::VEC3 c = positionCage[current];
+    const PFP2::VEC3 c_prev = positionCage[previous];
+    const PFP2::VEC3 c_next = positionCage[next];
 
-//    bool positiveAngle_prev = Geom::testOrientation2D(pt, c_prev, c) == Geom::LEFT;
-//    bool positiveAngle_next = Geom::testOrientation2D(pt, c, c_next) == Geom::LEFT;
+    bool positiveAngle_prev = Geom::testOrientation2D(pt, c_prev, c) == Geom::LEFT;
+    bool positiveAngle_next = Geom::testOrientation2D(pt, c, c_next) == Geom::LEFT;
 
 //    PFP2::VEC3 v = c - pt ;
 //    PFP2::VEC3 v_prev = c_prev - pt ;
@@ -464,15 +469,38 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
 
 //    res = (tan(B_prev/2.f) + (tan(B_next/2.f))) / v.norm();
 
-    PFP2::VEC3 di = c - pt;
-    PFP2::VEC3 di_prev = c_prev - pt;
-    PFP2::VEC3 di_next = c_next - pt;
+    const PFP2::VEC3 di_prev = c_prev - pt;
+    const PFP2::VEC3 di_next = c_next - pt;
 
-    PFP2::REAL ri = di.norm();
-    PFP2::REAL ri_prev = di_prev.norm();
-    PFP2::REAL ri_next = di_next.norm();
+    const PFP2::REAL ri_prev = di_prev.norm();
+    const PFP2::REAL ri_next = di_next.norm();
 
-    res = sqrt( (2 * (ri_prev*ri_next - di_prev*di_next)) / ((ri_prev*ri + di_prev*di) * (ri*ri_next + di*di_next)) );
+    //res = sqrt( (2 * (ri_prev*ri_next - di_prev*di_next)) / ((ri_prev*ri + di_prev*di) * (ri*ri_next + di*di_next)) );
+
+    if(!positiveAngle_prev || !positiveAngle_next)
+    {
+        res = - sqrt((ri_prev*ri_next - di_prev*di_next));
+    }
+    else
+    {
+        res = sqrt((ri_prev*ri_next - di_prev*di_next));
+    }
+
+    Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, current);
+
+    for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end(); d = trav_vert_face_cage.next())
+    {
+        PFP2::VEC3 dj = positionCage[d]-pt;
+        PFP2::VEC3 dj_next = positionCage[cage->phi1(d)]-pt;
+
+        PFP2::REAL rj = dj.norm();
+        PFP2::REAL rj_next = dj_next.norm();
+
+        if(d!=current && d!=previous)
+        {
+            res *= sqrt(rj*rj_next + dj*dj_next);
+        }
+    }
 
     return res;
 }
