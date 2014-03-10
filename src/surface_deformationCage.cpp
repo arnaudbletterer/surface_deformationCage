@@ -523,7 +523,15 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
 
     //res = sqrt( (2 * (ri_prev*ri_next - di_prev*di_next)) / ((ri_prev*ri + di_prev*di) * (ri*ri_next + di*di_next)) );
 
-    if(!positiveAngle_prev || !positiveAngle_next)
+    if(!positiveAngle_prev && positiveAngle_next)
+    {
+        res = - sqrt((ri_prev*ri_next - di_prev*di_next));
+    }
+    else if(!positiveAngle_next && positiveAngle_prev)
+    {
+        res = - sqrt((ri_prev*ri_next - di_prev*di_next));
+    }
+    else if(!positiveAngle_prev && !positiveAngle_next)
     {
         res = - sqrt((ri_prev*ri_next - di_prev*di_next));
     }
