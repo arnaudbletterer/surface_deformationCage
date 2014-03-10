@@ -490,14 +490,13 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
 
     for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end(); d = trav_vert_face_cage.next())
     {
-        PFP2::VEC3 dj = positionCage[d] - pt;
-        PFP2::VEC3 dj_next = positionCage[cage->phi1(d)] - pt;
-
-        PFP2::REAL rj = dj.norm();
-        PFP2::REAL rj_next = dj_next.norm();
-
         if(d!=current && d!=previous)
         {
+            PFP2::VEC3 dj = positionCage[d] - pt;
+            PFP2::VEC3 dj_next = positionCage[cage->phi1(d)] - pt;
+
+            PFP2::REAL rj = dj.norm();
+            PFP2::REAL rj_next = dj_next.norm();
             res *= sqrt(rj*rj_next + dj*dj_next);
         }
     }
