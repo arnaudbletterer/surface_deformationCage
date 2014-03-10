@@ -220,8 +220,8 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             mh_object->registerAttribute(spacePointObject);
         }
 
-        CGoGNStream::Out fichier;
-        fichier.toFile("/home/bletterer/plot3d_coordinates_inside.gp");
+//        CGoGNStream::Out fichier;
+//        fichier.toFile("/home/bletterer/plot3d_coordinates_inside.gp");
 
         TraversorV<PFP2::MAP> trav_vert_object(*object);
         for(Dart d = trav_vert_object.begin(); d != trav_vert_object.end(); d = trav_vert_object.next())
@@ -235,39 +235,39 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                     spacePointObject[d].setCage(dd);
                     spacePointObject[d].setCageNbV(cage->faceDegree(dd));
                     computePointMVCFromCage(d, positionObject, positionCage, spacePointObject[d].m_cageWeightsEigen, cage, dd, cage->faceDegree(dd));
-                    if(i==0)
-                    {
-                        fichier << positionObject[d][0] << " " << positionObject[d][1] << " " << spacePointObject[d].m_cageWeightsEigen(0, i) << CGoGNendl;
-                    }
+//                    if(i==0)
+//                    {
+//                        fichier << positionObject[d][0] << " " << positionObject[d][1] << " " << spacePointObject[d].m_cageWeightsEigen(0, i) << CGoGNendl;
+//                    }
                 }
                 ++i;
             }
         }
 
-        fichier.close();
+//        fichier.close();
 
-        fichier.toFile("/home/bletterer/plot3d_cage_inside.gp");
+//        fichier.toFile("/home/bletterer/plot3d_cage_inside.gp");
 
-        TraversorF<PFP2::MAP> trav_face_cage(*cage);
-        for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
-        {
-            if(!cage->isBoundaryMarked2(d))
-            {
-                int i = 0;
-                Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, d);
-                for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
-                {
-                    if(i==0)
-                        fichier << positionCage[dd][0] << " " << positionCage[dd][1] << " " << 1 << CGoGNendl;
-                    else
-                        fichier << positionCage[dd][0] << " " << positionCage[dd][1] << " " << 0 << CGoGNendl;
-                    ++i;
-                }
-                fichier << positionCage[trav_vert_face_cage.begin()][0] << " " << positionCage[trav_vert_face_cage.begin()][1] << " " << 1 << CGoGNendl;
-            }
-        }
+//        TraversorF<PFP2::MAP> trav_face_cage(*cage);
+//        for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
+//        {
+//            if(!cage->isBoundaryMarked2(d))
+//            {
+//                int i = 0;
+//                Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, d);
+//                for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
+//                {
+//                    if(i==0)
+//                        fichier << positionCage[dd][0] << " " << positionCage[dd][1] << " " << 1 << CGoGNendl;
+//                    else
+//                        fichier << positionCage[dd][0] << " " << positionCage[dd][1] << " " << 0 << CGoGNendl;
+//                    ++i;
+//                }
+//                fichier << positionCage[trav_vert_face_cage.begin()][0] << " " << positionCage[trav_vert_face_cage.begin()][1] << " " << 1 << CGoGNendl;
+//            }
+//        }
 
-        fichier.close();
+//        fichier.close();
 
         mh_cage->notifyAttributeModification(positionCage);     //JUSTE POUR DEBUG SANS DEPLACER DE SOMMETS DE CAGE
         computeBoundaryWeights(cage, object);
@@ -441,7 +441,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart
 PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Dart current, Dart next, Dart previous,
                                                         const VertexAttribute<PFP2::VEC3>& positionCage, PFP2::MAP* cage)
 {
-    PFP2::REAL res;
+    PFP2::REAL res(1.);
 
     const PFP2::VEC3 c = positionCage[current];
     const PFP2::VEC3 c_prev = positionCage[previous];
@@ -479,7 +479,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
 
     if(!positiveAngle_prev || !positiveAngle_next)
     {
-        res = - sqrt((ri_prev*ri_next - di_prev*di_next));
+        res = - sqrt(ri_prev*ri_next - di_prev*di_next);
     }
     else
     {
@@ -490,8 +490,8 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
 
     for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end(); d = trav_vert_face_cage.next())
     {
-        PFP2::VEC3 dj = positionCage[d]-pt;
-        PFP2::VEC3 dj_next = positionCage[cage->phi1(d)]-pt;
+        PFP2::VEC3 dj = positionCage[d] - pt;
+        PFP2::VEC3 dj_next = positionCage[cage->phi1(d)] - pt;
 
         PFP2::REAL rj = dj.norm();
         PFP2::REAL rj_next = dj_next.norm();
