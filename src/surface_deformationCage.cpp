@@ -454,20 +454,20 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     PFP2::VEC3 v_prev = c_prev - pt ;
     PFP2::VEC3 v_next = c_next - pt ;
 
-    PFP2::REAL B_prev = Geom::angle(v_prev, v);
-    PFP2::REAL B_next = Geom::angle(v, v_next);
+    PFP2::REAL b_prev = Geom::angle(v_prev, v);
+    PFP2::REAL b_next = Geom::angle(v, v_next);
 
     if(!positiveAngle_prev)
     {
-        B_prev *= -1;
+        b_prev *= -1;
     }
 
     if(!positiveAngle_next)
     {
-        B_next *= -1;
+        b_next *= -1;
     }
 
-    res = (tan(B_prev/2.f) + (tan(B_next/2.f))) / v.norm();
+    res = (tan(b_prev/2.f) + (tan(b_next/2.f))) / v.norm();
 
 //    const PFP2::VEC3 di_prev = c_prev - pt;
 //    const PFP2::VEC3 di_next = c_next - pt;
