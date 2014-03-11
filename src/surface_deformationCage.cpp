@@ -450,56 +450,96 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     bool positiveAngle_prev = Geom::testOrientation2D(pt, c_prev, c) == Geom::LEFT;
     bool positiveAngle_next = Geom::testOrientation2D(pt, c, c_next) == Geom::LEFT;
 
-//    PFP2::VEC3 v = c - pt ;
-//    PFP2::VEC3 v_prev = c_prev - pt ;
-//    PFP2::VEC3 v_next = c_next - pt ;
+    PFP2::VEC3 v = c - pt ;
+    PFP2::VEC3 v_prev = c_prev - pt ;
+    PFP2::VEC3 v_next = c_next - pt ;
 
-//    PFP2::REAL B_prev = Geom::angle(v_prev, v);
-//    PFP2::REAL B_next = Geom::angle(v, v_next);
+    PFP2::REAL B_prev = Geom::angle(v_prev, v);
+    PFP2::REAL B_next = Geom::angle(v, v_next);
 
-//    if(!positiveAngle_prev)
+    if(!positiveAngle_prev)
+    {
+        B_prev *= -1;
+    }
+
+    if(!positiveAngle_next)
+    {
+        B_next *= -1;
+    }
+
+    res = (tan(B_prev/2.f) + (tan(B_next/2.f))) / v.norm();
+
+//    const PFP2::VEC3 di_prev = c_prev - pt;
+//    const PFP2::VEC3 di_next = c_next - pt;
+
+//    const PFP2::REAL ri_prev = di_prev.norm();
+//    const PFP2::REAL ri_next = di_next.norm();
+
+//    if(!positiveAngle_prev || !positiveAngle_next)
 //    {
-//        B_prev *= -1;
+//        res = ri_prev*ri_next - di_prev*di_next;
+//    }
+//    else
+//    {
+//        res = ri_prev*ri_next - di_prev*di_next;
 //    }
 
-//    if(!positiveAngle_next)
+//    bool toCheck = false;
+
+//    if(fabs(pt[0] + 2.f) < FLT_EPSILON && fabs(pt[1] + 3.f) < FLT_EPSILON)
 //    {
-//        B_next *= -1;
+//        CGoGNout << "-- Point à comparer --" << CGoGNendl;
+
+//        CGoGNout << "pt : " << pt << CGoGNendl;
+//        CGoGNout << "c_prev : " << c_prev << CGoGNendl;
+//        CGoGNout << "c_next : " << c_next << CGoGNendl;
+//        CGoGNout << "di_prev : " << di_prev << CGoGNendl;
+//        CGoGNout << "di_next : " << di_next << CGoGNendl;
+//        CGoGNout << "ri_prev : " << ri_prev << CGoGNendl;
+//        CGoGNout << "ri_next : " << ri_next << CGoGNendl;
+//        CGoGNout << "di_prev*di_next : " << di_prev*di_next << CGoGNendl;
+//        CGoGNout << "ri_prev*ri_next : " << ri_prev*ri_next << CGoGNendl;
+
+//        toCheck = true;
 //    }
 
-//    res = (tan(B_prev/2.f) + (tan(B_next/2.f))) / v.norm();
+//    CGoGNout << "-----" << CGoGNendl;
 
-    const PFP2::VEC3 di_prev = c_prev - pt;
-    const PFP2::VEC3 di_next = c_next - pt;
+//    Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, current);
 
-    const PFP2::REAL ri_prev = di_prev.norm();
-    const PFP2::REAL ri_next = di_next.norm();
+//    for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end(); d = trav_vert_face_cage.next())
+//    {
+//        if(d!=current && d!=previous)
+//        {
+//            PFP2::VEC3 dj = positionCage[d] - pt;
+//            PFP2::VEC3 dj_next = positionCage[cage->phi1(d)] - pt;
 
-    //res = sqrt( (2 * (ri_prev*ri_next - di_prev*di_next)) / ((ri_prev*ri + di_prev*di) * (ri*ri_next + di*di_next)) );
+//            PFP2::REAL rj = dj.norm();
+//            PFP2::REAL rj_next = dj_next.norm();
 
-    if(!positiveAngle_prev || !positiveAngle_next)
-    {
-        res = - sqrt(ri_prev*ri_next - di_prev*di_next);
-    }
-    else
-    {
-        res = sqrt((ri_prev*ri_next - di_prev*di_next));
-    }
+//            res *= rj*rj_next + dj*dj_next;
 
-    Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, current);
+//            if(toCheck)
+//            {
+//                CGoGNout << "d : " << positionCage[d] << CGoGNendl;
+//                CGoGNout << "phi1(d) : " << positionCage[cage->phi1(d)] << CGoGNendl;
+//                CGoGNout << "dj : " << dj << CGoGNendl;
+//                CGoGNout << "dj_next : " << dj_next << CGoGNendl;
+//                CGoGNout << "rj : " << rj << CGoGNendl;
+//                CGoGNout << "rj_next : " << rj_next << CGoGNendl;
+//                CGoGNout << "dj*dj_next : " << dj*dj_next << CGoGNendl;
+//                CGoGNout << "rj*rj_next : " << rj*rj_next << CGoGNendl;
+//                CGoGNout << res << CGoGNendl;
+//            }
+//        }
+//    }
 
-    for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end(); d = trav_vert_face_cage.next())
-    {
-        if(d!=current && d!=previous)
-        {
-            PFP2::VEC3 dj = positionCage[d] - pt;
-            PFP2::VEC3 dj_next = positionCage[cage->phi1(d)] - pt;
+//    res = sqrt(res);
 
-            PFP2::REAL rj = dj.norm();
-            PFP2::REAL rj_next = dj_next.norm();
-            res *= sqrt(rj*rj_next + dj*dj_next);
-        }
-    }
+//    if(!positiveAngle_prev || !positiveAngle_next)
+//    {
+//        res *= -1;
+//    }
 
     return res;
 }
