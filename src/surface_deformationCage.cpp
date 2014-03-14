@@ -438,6 +438,49 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart
     return (1.0f/r)*sumU;
 }
 
+void Surface_DeformationCage_Plugin::computeFirstDerivative(PFP2::MAP* cage)
+{
+    Eigen::VectorXf verticesX, verticesY, derivativesX, derivativesY;
+    Eigen::MatrixXi coefficients;
+
+    VertexAttribute<PFP2::VEC3> positionCage = cage->getAttribute<PFP2::VEC3, VERTEX>("position");
+    if(!positionCage.isValid())
+    {
+        CGoGNout << "Position attribute chosen for the cage isn't valid" << CGoGNendl;
+    }
+
+    TraversorF<PFP2::MAP> trav_face_cage(*cage);
+    for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
+    {
+        verticesX.setZero(1, cage->faceDegree(d));
+        verticesY.setZero(1, cage->faceDegree(d));
+        derivativesX.setZero(1, cage->faceDegree(d));
+        derivativesY.setZero(1, cage->faceDegree(d));
+        coefficients.setZero(cage->faceDegree(d), cage->faceDegree(d));
+
+        for(int i = 0; i < coefficients.rows(); ++i)
+        {
+            coefficients(i,i) = 4;
+
+            if(i+1 < coefficients.rows())
+            {
+                coefficients(i,i+1) = 1;
+                coefficients(i+1,i) = 1;
+            }
+        }
+
+        int i = 0;
+
+        Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, d);
+        for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
+        {
+            verticesX(0, i) = 3*(positionCage[dd][0]-positionCage[cage->phi_1(dd)][0]);
+            verticesY(0, i) = 3*(positionCage[dd][1]-positionCage[cage->phi_1(dd)][1]);
+            ++i;
+        }
+    }
+}
+
 PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Dart current, Dart next, Dart previous,
                                                         const VertexAttribute<PFP2::VEC3>& positionCage, PFP2::MAP* cage)
 {
