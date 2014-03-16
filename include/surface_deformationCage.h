@@ -4,6 +4,7 @@
 #include "plugin_interaction.h"
 
 #include "Utils/colorMaps.h"
+#include "Eigen/Geometry"
 
 #include <cmath>
 
@@ -11,9 +12,9 @@
 
 #include "mapHandler.h"
 
-#include "Eigen/Geometry"
-
+//Attributes
 #include "spacePoint.h"
+#include "firstDerivative.h"
 
 namespace CGoGN
 {

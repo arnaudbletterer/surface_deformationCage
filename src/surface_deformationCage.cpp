@@ -440,8 +440,9 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart
 
 void Surface_DeformationCage_Plugin::computeFirstDerivative(PFP2::MAP* cage)
 {
-    Eigen::VectorXf verticesX, verticesY, derivativesX, derivativesY;
-    Eigen::MatrixXi coefficients;
+    Eigen::Matrix<PFP2::REAL, 2, Eigen::Dynamic> vertices, derivatives;
+    Eigen::MatrixXf coefficients;
+    int nbV = 0;
 
     VertexAttribute<PFP2::VEC3> positionCage = cage->getAttribute<PFP2::VEC3, VERTEX>("position");
     if(!positionCage.isValid())
@@ -449,24 +450,26 @@ void Surface_DeformationCage_Plugin::computeFirstDerivative(PFP2::MAP* cage)
         CGoGNout << "Position attribute chosen for the cage isn't valid" << CGoGNendl;
     }
 
+    FaceAttribute<FirstDerivative> firstDerivative = cage->getAttribute<FirstDerivative, FACE>("FirstDerivative");
+    if(!firstDerivative.isValid())
+    {
+        firstDerivative = cage->addAttribute<FirstDerivative, FACE>("FirstDerivative");
+    }
+
     TraversorF<PFP2::MAP> trav_face_cage(*cage);
     for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
     {
-        verticesX.setZero(1, cage->faceDegree(d));
-        verticesY.setZero(1, cage->faceDegree(d));
-        derivativesX.setZero(1, cage->faceDegree(d));
-        derivativesY.setZero(1, cage->faceDegree(d));
-        coefficients.setZero(cage->faceDegree(d), cage->faceDegree(d));
+        nbV = cage->faceDegree(d);
+        vertices.setZero(2, nbV);
+        derivatives.setZero(2, nbV);
+        coefficients.setZero(nbV, nbV);
+        firstDerivative[d].setBeginningDart(d);
+        firstDerivative[d].setNbVertices(nbV);
 
-        for(int i = 0; i < coefficients.rows(); ++i)
+        for(int i = 0; i < nbV; ++i)
         {
-            coefficients(i,i) = 4;
-
-            if(i+1 < coefficients.rows())
-            {
-                coefficients(i,i+1) = 1;
-                coefficients(i+1,i) = 1;
-            }
+            coefficients(i, i) = 1.f;
+            coefficients(i, (i+1)%nbV) = 1.f / (4.f-coefficients(i-1, i));
         }
 
         int i = 0;
@@ -474,9 +477,28 @@ void Surface_DeformationCage_Plugin::computeFirstDerivative(PFP2::MAP* cage)
         Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, d);
         for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
         {
-            verticesX(0, i) = 3*(positionCage[dd][0]-positionCage[cage->phi_1(dd)][0]);
-            verticesY(0, i) = 3*(positionCage[dd][1]-positionCage[cage->phi_1(dd)][1]);
+            if(i==0)
+            {
+                vertices(0, i) = (3 * (positionCage[cage->phi1(dd)][0]-positionCage[cage->phi_1(dd)][0])) * coefficients(i, (i+1)%nbV);
+                vertices(1, i) = (3 * (positionCage[cage->phi1(dd)][1]-positionCage[cage->phi_1(dd)][1])) * coefficients(i, (i+1)%nbV);
+            }
+            else
+            {
+                vertices(0, i) = (3 * (positionCage[cage->phi1(dd)][0]-positionCage[cage->phi_1(dd)][0]) - vertices(0, i-1)) * coefficients(i, (i+1)%nbV);
+                vertices(1, i) = (3 * (positionCage[cage->phi1(dd)][1]-positionCage[cage->phi_1(dd)][1]) - vertices(1, i-1)) * coefficients(i, (i+1)%nbV);
+            }
             ++i;
+        }
+
+        //We can now easily deduce the first derivative of the last vertex
+        firstDerivative[d].m_verticesDerivatives(0, nbV - 1) = vertices(0, nbV - 1);
+        firstDerivative[d].m_verticesDerivatives(1, nbV - 1) = vertices(1, nbV - 1);
+
+        //And compute the other derivatives from this one
+        for(i = nbV-2; i >= 0; --i)
+        {
+            firstDerivative[d].m_verticesDerivatives(0, i) = vertices(0, i) - coefficients(i, i+1)*firstDerivative[d].m_verticesDerivatives(0, i+1);
+            firstDerivative[d].m_verticesDerivatives(1, i) = vertices(1, i) - coefficients(i, i+1)*firstDerivative[d].m_verticesDerivatives(1, i+1);
         }
     }
 }
