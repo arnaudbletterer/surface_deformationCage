@@ -242,6 +242,36 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                 }
                 ++i;
             }
+
+        }
+
+        TraversorF<PFP2::MAP> trav_face_cage(*cage);
+        for(Dart dd = trav_face_cage.begin(); dd != trav_face_cage.end(); dd = trav_face_cage.next())
+        {
+            if(!cage->isBoundaryMarked2(dd))
+            {
+                PFP2::REAL sumMVC(0.f);
+                std::vector<PFP2::REAL> poids;
+                poids.reserve(cage->faceDegree(dd));
+
+                Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, dd);
+
+                for(Dart ddd = trav_vert_face_cage.begin(); ddd != trav_vert_face_cage.end(); ddd = trav_vert_face_cage.next())
+                {
+                    Dart next = cage->phi1(ddd);
+                    Dart prev = cage->phi_1(ddd);
+
+                    poids.push_back(computeMVC2D(PFP2::VEC3(-50000.f, -50000.f, 0.f), ddd, next, prev, positionCage, cage));
+                    sumMVC += poids.back();
+                }
+
+                for(unsigned int j=0; j<poids.size(); ++j)
+                {
+                    CGoGNout << "Avant : " << poids[j] << CGoGNendl;
+                    poids[j] /= sumMVC;
+                    CGoGNout << "Après : " << poids[j] << CGoGNendl;
+                }
+            }
         }
 
 //        fichier.close();
@@ -313,8 +343,6 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
     bool stop = false;
     Dart next, prev;
 
-    PFP2::REAL distance_next(0.f), distance_prev(0.f);
-
     weights.setZero(1, cageNbV);
 
     Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, beginningDart);
@@ -323,74 +351,10 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
         next = cage->phi1(d);
         prev = cage->phi_1(d);
 
-//        distance_next = Geom::squaredDistanceSeg2Point(positionCage[next], positionCage[d]-positionCage[next],
-//                                                       (positionCage[d]-positionCage[next]).norm2(),
-//                                                       positionObject[vertex]);
-
-//        distance_prev = Geom::squaredDistanceSeg2Point(positionCage[prev], positionCage[d]-positionCage[prev],
-//                                                       (positionCage[d]-positionCage[prev]).norm2(),
-//                                                       positionObject[vertex]);
-
-//        if(distance_next < FLT_EPSILON && distance_prev < FLT_EPSILON)
-//        {
-//            //Le sommet de l'objet se situe sur le sommet courant de la cage
-//            weights.setZero(1, cageNbV);
-
-//            weights(0, i) = 1.f;    //Le sommet de l'objet est entièrement dépendant du sommet courant de la cage
-
-//            stop = true;
-//        }
-//        else if(distance_next < FLT_EPSILON)
-//        {
-//            //Le sommet de l'objet est sur [cur;next]
-//            weights.setZero(1, cageNbV);
-
-//            PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
-//                                / (positionCage[next]-positionCage[d]).norm2());
-
-//            weights(0, (i+1)%cageNbV) = w;
-//            weights(0, i) = 1.f-w;
-
-//            stop = true;
-//        }
-//        else if(distance_prev < FLT_EPSILON)
-//        {
-//            //Le sommet de l'objet est sur [cur;prev]
-//            weights.setZero(1, cageNbV);
-
-//            PFP2::REAL w = sqrt((positionObject[vertex]-positionCage[d]).norm2()
-//                                / (positionCage[prev]-positionCage[d]).norm2());
-
-//            if(i==0)
-//            {
-//                weights(0, cageNbV-1) = w;
-//            }
-//            else
-//            {
-//                weights(0, i-1) = w;
-//            }
-//            weights(0, i) = 1.f-w;
-
-//            stop = true;
-//        }
-//        else
-//        {
-//            //On calcule les coordonnées de façon normale
-//            weights(0, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage);
-//            sumMVC += weights(0, i);
-//        }
         weights(0, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage, cage);
         sumMVC += weights(0, i);
         ++i;
     }
-
-//    if(!stop)
-//    {
-//        for(i=0; i<weights.cols(); ++i)
-//        {
-//            weights(0, i) /= sumMVC;
-//        }
-//    }
 
     for(i=0; i<weights.cols(); ++i)
     {
