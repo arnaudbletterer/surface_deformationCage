@@ -25,6 +25,11 @@ public :
     ~FirstDerivative()
     {}
 
+    Dart getBeginningDart()
+    {
+        return m_beginningDart;
+    }
+
     void setBeginningDart(Dart d)
     {
         m_beginningDart = d;

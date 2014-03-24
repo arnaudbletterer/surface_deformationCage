@@ -62,6 +62,8 @@ private :
                                  Eigen::Matrix<float, 1, Eigen::Dynamic>& weights,
                                  PFP2::MAP* cage, Dart beginningDart, int cageNbV);
 
+    PFP2::REAL modifyingFunction(const PFP2::REAL x);
+
     PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
                           const VertexAttribute<PFP2::VEC3>& positionCage);
     PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart current, Dart next, Dart previous,
