@@ -111,11 +111,6 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
             TraversorV<PFP2::MAP> trav_vert_object(*object);
             for(Dart d = trav_vert_object.begin(); d != trav_vert_object.end(); d = trav_vert_object.next())
             {
-                Eigen::Matrix<PFP2::REAL, Eigen::Dynamic, 2> cageCoordinatesEigen;
-
-                cageCoordinatesEigen.setZero(cage->faceDegree(spacePointObject[d].getCageDart()), 2);
-                cageCoordinatesEigen.setZero(cage->faceDegree(spacePointObject[d].getCageDart()), 2);
-
                 Eigen::Matrix<PFP2::REAL, 1, 2> objectPositionEigen;
                 objectPositionEigen.setZero(1, 2);
                 PFP2::REAL totalBoundaries(0.);
@@ -125,13 +120,10 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                 Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, spacePointObject[d].getCageDart());
                 for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
                 {
-                    cageCoordinatesEigen(i, 0) = positionCage[dd][0];
-                    cageCoordinatesEigen(i, 1) = positionCage[dd][1];
-
-                    objectPositionEigen(0, 0) += spacePointObject[d].m_cageWeightsEigen(0, i)
-                            * (cageCoordinatesEigen(i, 0) + (firstDerivativeCage[dd].m_verticesDerivatives(0, i) * (positionObject[d][0] - cageCoordinatesEigen(i, 0))));
-                    objectPositionEigen(0, 1) += spacePointObject[d].m_cageWeightsEigen(0, i)
-                            * (cageCoordinatesEigen(i, 1) + (firstDerivativeCage[dd].m_verticesDerivatives(1, i) * (positionObject[d][1] - cageCoordinatesEigen(i, 1))));
+                    objectPositionEigen(0, 0) += spacePointObject[d].m_cageWeightsEigen(0, i) * (positionCage[dd][0]
+                            + (-firstDerivativeCage[dd].m_verticesDerivatives(0, i) * (positionObject[d][0] - positionCage[dd][0])));
+                    objectPositionEigen(0, 1) += spacePointObject[d].m_cageWeightsEigen(0, i) * (positionCage[dd][1]
+                            + (-firstDerivativeCage[dd].m_verticesDerivatives(1, i) * (positionObject[d][1] - positionCage[dd][1])));
 
                     ++i;
                 }
@@ -362,6 +354,7 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
         ++i;
     }
 
+    //Coordinates normalization
     for(i=0; i<weights.cols(); ++i)
     {
         weights(0, i) /= sumMVC;
@@ -369,12 +362,14 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
 
     sumMVC = 0.f;
 
+    //Modification of coordinates
     for(i=0; i<weights.cols(); ++i)
     {
         weights(0, i) = modifyingFunction(weights(0, i));
         sumMVC += weights(0, i);
     }
 
+    //Higher-order coordinates normalization
     for(i=0; i<weights.cols(); ++i)
     {
         weights(0, i) /= sumMVC;
