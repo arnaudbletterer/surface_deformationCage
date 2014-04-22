@@ -13,7 +13,7 @@ namespace SCHNApps
 class FirstDerivative {
 
 public :
-    Eigen::Matrix<PFP2::REAL, 2, Eigen::Dynamic> m_verticesDerivatives;
+    std::vector<Eigen::MatrixXf> m_verticesDerivatives;
 
 private :
     Dart m_beginningDart;
@@ -37,12 +37,16 @@ public :
 
     void setNbVertices(int n)
     {
-        m_verticesDerivatives.setZero(2, n);
+        m_verticesDerivatives.resize(n);
+        for(int i = 0; i < m_verticesDerivatives.size(); ++i)
+        {
+            m_verticesDerivatives[i].setZero(2, 2); //Pour l'instant les déformations sont faites en 2 dimensions
+        }
     }
 
     bool isInitialized()
     {
-        return m_beginningDart == EMBNULL;
+        return m_beginningDart != EMBNULL;
     }
 
     static std::string CGoGNnameOfType()

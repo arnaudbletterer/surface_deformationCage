@@ -4,7 +4,10 @@
 #include "plugin_interaction.h"
 
 #include "Utils/colorMaps.h"
+
 #include "Eigen/Geometry"
+
+#include "Algo/Modelisation/voxellisation.h"
 
 #include <cmath>
 

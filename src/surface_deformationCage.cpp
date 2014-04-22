@@ -111,51 +111,69 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
             TraversorV<PFP2::MAP> trav_vert_object(*object);
             for(Dart d = trav_vert_object.begin(); d != trav_vert_object.end(); d = trav_vert_object.next())
             {
-                Eigen::Matrix<PFP2::REAL, 1, 2> objectPositionEigen;
-                objectPositionEigen.setZero(1, 2);
-                PFP2::REAL totalBoundaries(0.);
-
-                TraversorF<PFP2::MAP> trav_face_cage(*cage);
-                for(Dart dd = trav_face_cage.begin(); dd != trav_face_cage.end(); dd = trav_face_cage.next())
+                if(spacePointObject[d].isInitialized())
                 {
-                    if(!cage->isBoundaryMarked2(dd))
+                    Eigen::Matrix<PFP2::REAL, 1, 2> objectPositionEigen;
+                    objectPositionEigen.setZero(1, 2);
+                    PFP2::REAL totalBoundaries(0.);
+
+//                    int i = 0;
+//                    Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, spacePointObject[d].getCageDart());
+//                    for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
+//                    {
+//                        objectPositionEigen(0, 0) += spacePointObject[d].m_cageWeightsEigen(0, i) * positionCage[dd][0];
+//                        objectPositionEigen(0, 1) += spacePointObject[d].m_cageWeightsEigen(0, i) * positionCage[dd][1];
+//                        ++i;
+//                    }
+
+                    TraversorF<PFP2::MAP> trav_face_cage(*cage);
+                    for(Dart dd = trav_face_cage.begin(); dd != trav_face_cage.end(); dd = trav_face_cage.next())
                     {
-                        for(unsigned int i = 0; i<firstDerivativeCage[dd].m_verticesDerivatives.cols(); ++i)
+                        if(!cage->isBoundaryMarked2(dd))
                         {
-                            objectPositionEigen(0, 0) += spacePointObject[d].m_cageWeightsEigen(0, i) * (positionCage[dd][0]
-                                    + (firstDerivativeCage[dd].m_verticesDerivatives(0, i) * (positionObject[d][0] - positionCage[dd][0])));
-                            objectPositionEigen(0, 1) += spacePointObject[d].m_cageWeightsEigen(0, i) * (positionCage[dd][1]
-                                    + (firstDerivativeCage[dd].m_verticesDerivatives(1, i) * (positionObject[d][1] - positionCage[dd][1])));
+                            if(firstDerivativeCage[dd].isInitialized())
+                            {
+                                Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, dd);
+                                int i = 0;
+                                for(Dart ddd = trav_vert_face_cage.begin(); ddd != trav_vert_face_cage.end(); ddd = trav_vert_face_cage.next())
+                                {
+                                    objectPositionEigen(0, 0) += spacePointObject[d].m_cageWeightsEigen(0, i) * (positionCage[dd][0]
+                                                + (firstDerivativeCage[dd].m_verticesDerivatives[i](0, 0) * (positionObject[d][0] - positionCage[dd][0])));
+                                    objectPositionEigen(0, 1) += spacePointObject[d].m_cageWeightsEigen(0, i) * (positionCage[dd][1]
+                                                + (firstDerivativeCage[dd].m_verticesDerivatives[i](1, 1) * (positionObject[d][1] - positionCage[dd][1])));
+                                    ++i;
+                                }
+                            }
                         }
                     }
+
+    //                //On récupère les positions des sommets des cages adjacentes
+    //                for(i = 0; i < spacePointObject[d].m_adjCagesDart.size(); ++i)
+    //                {
+    //                    Eigen::Matrix<PFP2::REAL, Eigen::Dynamic, 2> adjCageCoordinatesEigen;
+    //                    Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic> adjCageWeightsEigen;
+    //                    adjCageCoordinatesEigen.setZero(spacePointObject[d].m_adjCagesWeights[i].cols(), 2);
+    //                    adjCageWeightsEigen.setZero(1, spacePointObject[d].m_adjCagesWeights[i].cols());
+
+    //                    int j = 0;
+
+    //                    Traversor2FV<PFP2::MAP> trav_adj(*cage, spacePointObject[d].m_adjCagesDart[i]);
+    //                    for(Dart dd = trav_adj.begin(); dd != trav_adj.end(); dd = trav_adj.next())
+    //                    {
+    //                        adjCageWeightsEigen(0, j) = spacePointObject[d].m_adjCagesWeights[i](0, j);
+    //                        adjCageCoordinatesEigen(j, 0) = positionCage[dd][0];
+    //                        adjCageCoordinatesEigen(j, 1) = positionCage[dd][1];
+    //                        ++j;
+    //                    }
+    //                    objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[i] * (adjCageWeightsEigen * adjCageCoordinatesEigen);
+    //                    totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i];
+    //                }
+
+                    //objectPositionEigen += (1 - totalBoundaries) * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
+
+                    positionObject[d][0] = objectPositionEigen(0, 0);
+                    positionObject[d][1] = objectPositionEigen(0, 1);
                 }
-
-//                //On récupère les positions des sommets des cages adjacentes
-//                for(i = 0; i < spacePointObject[d].m_adjCagesDart.size(); ++i)
-//                {
-//                    Eigen::Matrix<PFP2::REAL, Eigen::Dynamic, 2> adjCageCoordinatesEigen;
-//                    Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic> adjCageWeightsEigen;
-//                    adjCageCoordinatesEigen.setZero(spacePointObject[d].m_adjCagesWeights[i].cols(), 2);
-//                    adjCageWeightsEigen.setZero(1, spacePointObject[d].m_adjCagesWeights[i].cols());
-
-//                    int j = 0;
-
-//                    Traversor2FV<PFP2::MAP> trav_adj(*cage, spacePointObject[d].m_adjCagesDart[i]);
-//                    for(Dart dd = trav_adj.begin(); dd != trav_adj.end(); dd = trav_adj.next())
-//                    {
-//                        adjCageWeightsEigen(0, j) = spacePointObject[d].m_adjCagesWeights[i](0, j);
-//                        adjCageCoordinatesEigen(j, 0) = positionCage[dd][0];
-//                        adjCageCoordinatesEigen(j, 1) = positionCage[dd][1];
-//                        ++j;
-//                    }
-//                    objectPositionEigen += spacePointObject[d].m_cageBoundaryWeights[i] * (adjCageWeightsEigen * adjCageCoordinatesEigen);
-//                    totalBoundaries += spacePointObject[d].m_cageBoundaryWeights[i];
-//                }
-
-                //objectPositionEigen += (1 - totalBoundaries) * (spacePointObject[d].m_cageWeightsEigen * cageCoordinatesEigen);
-
-                positionObject[d][0] = objectPositionEigen(0, 0);
-                positionObject[d][1] = objectPositionEigen(0, 1);
             }
 
             if(mh_object)
@@ -227,25 +245,37 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 //        CGoGNStream::Out fichier;
 //        fichier.toFile("/home/bletterer/plot3d_coordinates_inside.gp");
 
+        Geom::BoundingBox<PFP2::VEC3> bb = Algo::Geometry::computeBoundingBox<PFP2>(*cage, positionCage);
+        PFP2::VEC3 min = bb.min();
+        PFP2::VEC3 max = bb.max();
+
+        CGoGNout << "Min : " << min << CGoGNendl;
+        CGoGNout << "Max : " << max << CGoGNendl;
+
+        Algo::Surface::Modelisation::swapVectorMax(min, max);
+
         TraversorV<PFP2::MAP> trav_vert_object(*object);
         for(Dart d = trav_vert_object.begin(); d != trav_vert_object.end(); d = trav_vert_object.next())
         {
-            int i = 0;
-            TraversorF<PFP2::MAP> trav_face_cage(*cage);
-            for(Dart dd = trav_face_cage.begin(); dd != trav_face_cage.end(); dd = trav_face_cage.next())
-            {
-                if(!cage->isBoundaryMarked2(dd))
+//            if(isInCage(positionObject[d], min, max))
+//            {
+                int i = 0;
+                TraversorF<PFP2::MAP> trav_face_cage(*cage);
+                for(Dart dd = trav_face_cage.begin(); dd != trav_face_cage.end(); dd = trav_face_cage.next())
                 {
-                    spacePointObject[d].setCage(dd);
-                    spacePointObject[d].setCageNbV(cage->faceDegree(dd));
-                    computePointMVCFromCage(d, positionObject, positionCage, spacePointObject[d].m_cageWeightsEigen, cage, dd, cage->faceDegree(dd));
-//                    if(i==0)
-//                    {
-//                        fichier << positionObject[d][0] << " " << positionObject[d][1] << " " << spacePointObject[d].m_cageWeightsEigen(0, i) << CGoGNendl;
-//                    }
+                        if(!cage->isBoundaryMarked2(dd))
+                        {
+                            spacePointObject[d].setCage(dd);
+                            spacePointObject[d].setCageNbV(cage->faceDegree(dd));
+                            computePointMVCFromCage(d, positionObject, positionCage, spacePointObject[d].m_cageWeightsEigen, cage, dd, cage->faceDegree(dd));
+        //                    if(i==0)
+        //                    {
+        //                        fichier << positionObject[d][0] << " " << positionObject[d][1] << " " << spacePointObject[d].m_cageWeightsEigen(0, i) << CGoGNendl;
+        //                    }
+                        }
+                        ++i;
                 }
-                ++i;
-            }
+//            }
         }
 
         computeFirstDerivative(cage);
@@ -362,40 +392,40 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
         weights(0, i) /= sumMVC;
     }
 
-    sumMVC = 0.f;
+//    sumMVC = 0.f;
 
-    //Modification of coordinates
-    for(i=0; i<weights.cols(); ++i)
-    {
-        weights(0, i) = modifyingFunction(weights(0, i));
-        sumMVC += weights(0, i);
-    }
+//    //Modification of coordinates
+//    for(i=0; i<weights.cols(); ++i)
+//    {
+//        weights(0, i) = modifyingFunction(weights(0, i));
+//        sumMVC += weights(0, i);
+//    }
 
-    //Higher-order coordinates normalization
-    for(i=0; i<weights.cols(); ++i)
-    {
-        weights(0, i) /= sumMVC;
-    }
+//    //Higher-order coordinates normalization
+//    for(i=0; i<weights.cols(); ++i)
+//    {
+//        weights(0, i) /= sumMVC;
+//    }
 }
 
 PFP2::REAL Surface_DeformationCage_Plugin::modifyingFunction(const PFP2::REAL x)
 {
-//    if(x < FLT_EPSILON)
-//    {
-//        return 0.f;
-//    }
-//    else if((x-1.f) < FLT_EPSILON)
-//    {
+    if(x < FLT_EPSILON)
+    {
+        return 0.f;
+    }
+    else if((x-1.f) < FLT_EPSILON)
+    {
         return -2.f*x*x*(x-1.5f);
-//    }
-//    else if((x-1.5f) < FLT_EPSILON)
-//    {
-//        return 1.f + (x - 1.f) * (x - 1.f);
-//    }
-//    else
-//    {
-//        return x - 0.25f;
-//    }
+    }
+    else if((x-1.5f) < FLT_EPSILON)
+    {
+        return 1.f + (x - 1.f) * (x - 1.f);
+    }
+    else
+    {
+        return x - 0.25f;
+    }
 }
 
 PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& positionCage)
@@ -467,105 +497,127 @@ void Surface_DeformationCage_Plugin::computeFirstDerivative(PFP2::MAP* cage)
             firstDerivative[d].setBeginningDart(d);
             firstDerivative[d].setNbVertices(nbV);
 
-            //Initialization of coefficients matrix
-            int i = 0;
-            for(i = 0; i < nbV; ++i)
-            {
-                coefficients(i, i) = 4.f;
-                coefficients(i, (i+1)%nbV) = 1.f;
-                if(i==0)
-                {
-                    coefficients(i, nbV-1) = 1.f;
-                }
-                else
-                {
-                    coefficients(i, i-1) = 1.f;
-                }
-            }
+//            //Initialization of coefficients matrix
+//            int i = 0;
+//            for(i = 0; i < nbV; ++i)
+//            {
+//                coefficients(i, i) = 4.f;
+//                coefficients(i, (i+1)%nbV) = 1.f;
+//                if(i==0)
+//                {
+//                    coefficients(i, nbV-1) = 1.f;
+//                }
+//                else
+//                {
+//                    coefficients(i, i-1) = 1.f;
+//                }
+//            }
 
-            //Forward elimination (Gaussian elimination)
-            //First we want only "zeros" on the left hand side of the diagonal
-            //To do so we substract the row above from the current row
+//            //Initialization of vertices matrix
+//            i = 0;
+//            Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, d);
+//            for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
+//            {
+//                vertices(0, i) = (3 * (positionCage[cage->phi1(dd)][0] - positionCage[cage->phi_1(dd)][0]));
+//                vertices(1, i) = (3 * (positionCage[cage->phi1(dd)][1] - positionCage[cage->phi_1(dd)][1]));
+//                ++i;
+//            }
 
-            for(i = 1; i < nbV-1; ++i)
-            {
-                for(int j = 0; j < nbV; ++j)
-                {
-                    coefficients(i, j) = (coefficients(i-1, j) * (-coefficients(i,i-1) / coefficients(i-1, i-1))) + coefficients(i, j);
-                }
-            }
+//            //Forward elimination (Gaussian elimination)
+//            //First we want only "zeros" on the left hand side of the diagonal
+//            //To do so we substract the row above from the current row
 
-            //For the last row we have to successively remove the leftmost non-zero value
-            for(i = 0; i < nbV-1; ++i)
-            {
-                for(int j = 0; j < nbV; ++j)
-                {
-                    coefficients(nbV-1, j) = (coefficients(i,j) * (-coefficients(nbV-1,i) / coefficients(i, i))) + coefficients(nbV-1, j);
-                }
+//            for(i = 1; i < nbV-1; ++i)
+//            {
+//                for(int j = 0; j < nbV; ++j)
+//                {
+//                    coefficients(i, j) = (coefficients(i-1, j) * (-coefficients(i,i-1) / coefficients(i-1, i-1))) + coefficients(i, j);
+//                }
+//                vertices(0, i) = (vertices(0, i-1) * (-coefficients(i, i-1) / coefficients(i-1, i-1))) + vertices(0, i);
+//                vertices(1, i) = (vertices(1, i-1) * (-coefficients(i, i-1) / coefficients(i-1, i-1))) + vertices(1, i);
+//            }
 
-                //We also set the value of the element of the current row 'i' on the diagonal to be 1
-                PFP2::REAL rowDiagonalValue = coefficients(i ,i);
-                for(int j = 0; j < nbV; ++j)
-                {
-                    coefficients(i, j) /= rowDiagonalValue;
-                }
-            }
+//            //For the last row we have to successively remove the leftmost non-zero value
+//            for(i = 0; i < nbV-1; ++i)
+//            {
+//                for(int j = 0; j < nbV; ++j)
+//                {
+//                    coefficients(nbV-1, j) = (coefficients(i,j) * (-coefficients(nbV-1,i) / coefficients(i, i))) + coefficients(nbV-1, j);
+//                }
 
-            //We set the value of the element of the last row on the diagonal to be 1 too
-            for(i = 0; i < nbV; ++i)
-            {
-                coefficients(nbV-1, i) /= coefficients(nbV-1, nbV-1);
-            }
+//                vertices(0, nbV-1) = (vertices(0, i) * (-coefficients(nbV-1, i) / coefficients(i, i))) + vertices(0, nbV-1);
+//                vertices(1, nbV-1) = (vertices(1, i) * (-coefficients(nbV-1, i) / coefficients(i, i))) + vertices(1, nbV-1);
 
-            //Initialization of vertices matrix
-            i = 0;
-            Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, d);
-            for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
-            {
-                vertices(0, i) = (3 * (positionCage[cage->phi1(dd)][0] - positionCage[cage->phi_1(dd)][0]));
-                vertices(1, i) = (3 * (positionCage[cage->phi1(dd)][1] - positionCage[cage->phi_1(dd)][1]));
-                ++i;
-            }
+//                //We also set the value of the element of the current row 'i' on the diagonal to be 1
+//                PFP2::REAL rowDiagonalValue = coefficients(i ,i);
+
+//                vertices(0, i) /= rowDiagonalValue;
+//                vertices(1, i) /= rowDiagonalValue;
+//                for(int j = 0; j < nbV; ++j)
+//                {
+//                    coefficients(i, j) /= rowDiagonalValue;
+//                }
+//            }
+
+//            vertices(0, nbV-1) /= coefficients(nbV-1, nbV-1);
+//            vertices(1, nbV-1) /= coefficients(nbV-1, nbV-1);
+
+//            //We set the value of the element of the last row on the diagonal to be 1 too
+//            for(i = 0; i < nbV; ++i)
+//            {
+//                coefficients(nbV-1, i) /= coefficients(nbV-1, nbV-1);
+//            }
 
             //Backward substitution
             //Now we simply have to successively resolve the equations by starting from the bottom of the matrix
             //(Because the answer of the last equation is trivial)
 
-            firstDerivative[d].m_verticesDerivatives(0, nbV-1) = vertices(0, nbV-1);
-            firstDerivative[d].m_verticesDerivatives(1, nbV-1) = vertices(0, nbV-1);
+//            firstDerivative[d].m_verticesDerivatives(0, nbV-1) = vertices(0, nbV-1);
+//            firstDerivative[d].m_verticesDerivatives(1, nbV-1) = vertices(0, nbV-1);
 
-            for(i = nbV-2; i > 0; --i)
+//            for(i = nbV-2; i > 0; --i)
+//            {
+//                firstDerivative[d].m_verticesDerivatives(0, i) = vertices(0, i)
+//                        - coefficients(i, i+1) * firstDerivative[d].m_verticesDerivatives(0, i+1);
+//                firstDerivative[d].m_verticesDerivatives(1, i) = vertices(1, i)
+//                        - coefficients(i, i+1) * firstDerivative[d].m_verticesDerivatives(1, i+1);
+//            }
+
+//            //For the first row of the matrix, we need to consider the last column too, as it has a non-zero value
+//            firstDerivative[d].m_verticesDerivatives(0, 0) = vertices(0, 0)
+//                    - coefficients(0, nbV-1) * firstDerivative[d].m_verticesDerivatives(0, nbV-1)
+//                    - coefficients(0, 1) * firstDerivative[d].m_verticesDerivatives(0, 1);
+
+//            firstDerivative[d].m_verticesDerivatives(1, 0) = vertices(1, 0)
+//                    - coefficients(0, nbV-1) * firstDerivative[d].m_verticesDerivatives(1, nbV-1)
+//                    - coefficients(0, 1) * firstDerivative[d].m_verticesDerivatives(1, 1);
+
+//            CGoGNout << "--Matrice des coefficients --" << CGoGNendl;
+//            for(i = 0; i < nbV; ++i)
+//            {
+//                for(int j = 0; j < nbV; ++j)
+//                {
+//                    CGoGNout << coefficients(i,j) << ", " << CGoGNflush;
+//                }
+//                CGoGNout << CGoGNendl;
+//            }
+
+//            for(i = 0; i < nbV; ++i)
+//            {
+//                CGoGNout << "Tangente : [" << firstDerivative[d].m_verticesDerivatives(0, i) << ","
+//                         <<  firstDerivative[d].m_verticesDerivatives(1, i) << "]" << CGoGNendl;
+//            }
+
+            int i = 0;
+            Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, d);
+            for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
             {
-                firstDerivative[d].m_verticesDerivatives(0, i) = vertices(0, i)
-                        - coefficients(i, i+1) * firstDerivative[d].m_verticesDerivatives(0, i+1);
-                firstDerivative[d].m_verticesDerivatives(1, i) = vertices(1, i)
-                        - coefficients(i, i+1) * firstDerivative[d].m_verticesDerivatives(1, i+1);
-            }
-
-            //For the first row of the matrix, we need to consider the last column too, as it has a non-zero value
-            firstDerivative[d].m_verticesDerivatives(0, 0) = vertices(0, 0)
-                    - coefficients(0, nbV-1) * firstDerivative[d].m_verticesDerivatives(0, nbV-1)
-                    - coefficients(0, 1) * firstDerivative[d].m_verticesDerivatives(0, 1);
-
-            firstDerivative[d].m_verticesDerivatives(1, 0) = vertices(1, 0)
-                    - coefficients(0, nbV-1) * firstDerivative[d].m_verticesDerivatives(1, nbV-1)
-                    - coefficients(0, 1) * firstDerivative[d].m_verticesDerivatives(1, 1);
-
-            for(i = 0; i< nbV; ++i)
-            {
-                for(int j = 0; j< nbV; ++j)
+                for(int j = 0; j < 2 ; ++j)
                 {
-                    CGoGNout << coefficients(i,j) << ", " << CGoGNflush;
+                    firstDerivative[d].m_verticesDerivatives[i](j, j) = 1.f;
                 }
-                CGoGNout << CGoGNendl;
+                ++i;
             }
-
-            for(i = 0; i < nbV; ++i)
-            {
-                CGoGNout << "Tangente : [" << firstDerivative[d].m_verticesDerivatives(0, i) << ","
-                         <<  firstDerivative[d].m_verticesDerivatives(1, i) << "]" << CGoGNendl;
-            }
-
         }
     }
 }
@@ -701,8 +753,8 @@ PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL x,
 
 bool Surface_DeformationCage_Plugin::isInCage(const PFP2::VEC3& point, const PFP2::VEC3& min, const PFP2::VEC3& max)
 {
-    if(point[0]+(FLT_EPSILON*10000) > min[0] && point[1]+(FLT_EPSILON*10000) > min[1]
-            && point[0]-(FLT_EPSILON*10000) < max[0] && point[1]-(FLT_EPSILON*10000) < max[1])
+    if(point[0] > min[0] && point[1] > min[1]
+            && point[0] < max[0] && point[1] < max[1])
     {
         return true;
     }
