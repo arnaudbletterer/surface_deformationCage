@@ -105,7 +105,7 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
         VertexAttribute<PFP2::VEC3> positionObject = object->getAttribute<PFP2::VEC3, VERTEX>("position");
         VertexAttribute<SpacePoint> spacePointObject = object->getAttribute<SpacePoint, VERTEX>("SpacePoint");
 
-        if(spacePointObject.isValid() && firstDerivativeCage.isValid())
+        if(spacePointObject.isValid())
         {
             //Si les calculs de poids ont déjà été effectués
             TraversorV<PFP2::MAP> trav_vert_object(*object);
@@ -117,35 +117,30 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                     objectPositionEigen.setZero(1, 2);
                     PFP2::REAL totalBoundaries(0.);
 
-//                    int i = 0;
-//                    Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, spacePointObject[d].getCageDart());
-//                    for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
-//                    {
-//                        objectPositionEigen(0, 0) += spacePointObject[d].m_cageWeightsEigen(0, i) * positionCage[dd][0];
-//                        objectPositionEigen(0, 1) += spacePointObject[d].m_cageWeightsEigen(0, i) * positionCage[dd][1];
-//                        ++i;
-//                    }
-
-                    TraversorF<PFP2::MAP> trav_face_cage(*cage);
-                    for(Dart dd = trav_face_cage.begin(); dd != trav_face_cage.end(); dd = trav_face_cage.next())
+                    int i = 0;
+                    Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, spacePointObject[d].getCageDart());
+                    for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
                     {
-                        if(!cage->isBoundaryMarked2(dd))
-                        {
-                            if(firstDerivativeCage[dd].isInitialized())
-                            {
-                                Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, dd);
-                                int i = 0;
-                                for(Dart ddd = trav_vert_face_cage.begin(); ddd != trav_vert_face_cage.end(); ddd = trav_vert_face_cage.next())
-                                {
-                                    objectPositionEigen(0, 0) += spacePointObject[d].m_cageWeightsEigen(0, i) * (positionCage[dd][0]
-                                                + (firstDerivativeCage[dd].m_verticesDerivatives[i](0, 0) * (positionObject[d][0] - positionCage[dd][0])));
-                                    objectPositionEigen(0, 1) += spacePointObject[d].m_cageWeightsEigen(0, i) * (positionCage[dd][1]
-                                                + (firstDerivativeCage[dd].m_verticesDerivatives[i](1, 1) * (positionObject[d][1] - positionCage[dd][1])));
-                                    ++i;
-                                }
-                            }
-                        }
+                        objectPositionEigen(0, 0) += spacePointObject[d].m_cageWeightsEigen(0, i) * positionCage[dd][0];
+                        objectPositionEigen(0, 1) += spacePointObject[d].m_cageWeightsEigen(0, i) * positionCage[dd][1];
+                        ++i;
                     }
+
+//                    TraversorF<PFP2::MAP> trav_face_cage(*cage);
+//                    for(Dart dd = trav_face_cage.begin(); dd != trav_face_cage.end(); dd = trav_face_cage.next())
+//                    {
+//                        if(!cage->isBoundaryMarked2(dd))
+//                        {
+//                            Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, dd);
+//                            int i = 0;
+//                            for(Dart ddd = trav_vert_face_cage.begin(); ddd != trav_vert_face_cage.end(); ddd = trav_vert_face_cage.next())
+//                            {
+//                                objectPositionEigen(0, 0) += spacePointObject[d].m_cageWeightsEigen(0, i) * positionCage[ddd][0];
+//                                objectPositionEigen(0, 1) += spacePointObject[d].m_cageWeightsEigen(0, i) * positionCage[ddd][1];
+//                                ++i;
+//                            }
+//                        }
+//                    }
 
     //                //On récupère les positions des sommets des cages adjacentes
     //                for(i = 0; i < spacePointObject[d].m_adjCagesDart.size(); ++i)
@@ -278,7 +273,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
 //            }
         }
 
-        computeFirstDerivative(cage);
+        //computeFirstDerivative(cage);
 
 //        TraversorF<PFP2::MAP> trav_face_cage(*cage);
 //        for(Dart dd = trav_face_cage.begin(); dd != trav_face_cage.end(); dd = trav_face_cage.next())
@@ -392,33 +387,36 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
         weights(0, i) /= sumMVC;
     }
 
-//    sumMVC = 0.f;
+    sumMVC = 0.f;
 
-//    //Modification of coordinates
-//    for(i=0; i<weights.cols(); ++i)
-//    {
-//        weights(0, i) = modifyingFunction(weights(0, i));
-//        sumMVC += weights(0, i);
-//    }
+    CGoGNout << "-- Nouveau point --" << CGoGNendl;
 
-//    //Higher-order coordinates normalization
-//    for(i=0; i<weights.cols(); ++i)
-//    {
-//        weights(0, i) /= sumMVC;
-//    }
+    //Modification of coordinates
+    for(i=0; i<weights.cols(); ++i)
+    {
+        CGoGNout << "Weights (avant) : " << weights(0, i) << CGoGNendl;
+        weights(0, i) = modifyingFunction(weights(0, i));
+        sumMVC += weights(0, i);
+    }
+    //Higher-order coordinates normalization
+    for(i=0; i<weights.cols(); ++i)
+    {
+        weights(0, i) /= sumMVC;
+        CGoGNout << "Weights (après) : " << weights(0, i) << CGoGNendl;
+    }
 }
 
 PFP2::REAL Surface_DeformationCage_Plugin::modifyingFunction(const PFP2::REAL x)
 {
-    if(x < FLT_EPSILON)
+    if(x < 0.f)
     {
         return 0.f;
     }
-    else if((x-1.f) < FLT_EPSILON)
+    else if(x < 1.f)
     {
         return -2.f*x*x*(x-1.5f);
     }
-    else if((x-1.5f) < FLT_EPSILON)
+    else if(x < 1.5f)
     {
         return 1.f + (x - 1.f) * (x - 1.f);
     }
@@ -651,7 +649,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
         b_next *= -1;
     }
 
-    res = (tan(b_prev/2.f) + (tan(b_next/2.f))) / v.norm();
+    res = (tan(b_prev/2.f) + tan(b_next/2.f)) / v.norm();
 
     return res;
 }
