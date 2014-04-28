@@ -95,7 +95,8 @@ private slots:
     void boundarySliderValueChanged(int value);
 
 public slots:
-    void computeAllPointsFromObject(const QString& objectName, const QString& cageName, const QString& objectNameAttr, const QString& cageNameAttr);
+    void computeAllPointsFromObject(const QString& objectName, const QString& cageName,
+                                    const QString& objectNameAttr, const QString& cageNameAttr, bool onlyInside = false);
 
 private:
     Dialog_DeformationCage* m_deformationCageDialog;
