@@ -18,6 +18,7 @@
 //Attributes
 #include "spacePoint.h"
 #include "firstDerivative.h"
+#include "lastPosition.h"
 
 namespace CGoGN
 {
@@ -77,8 +78,8 @@ private :
     /*
      *Fonctions de l'article
      */
-    void boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>& weights, Dart beginningDart,
-                                std::vector<PFP2::REAL>& boundaryWeights, PFP2::MAP* cage);
+    void boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>& weights,
+                                std::vector<PFP2::REAL>& boundaryWeight);
 
     PFP2::REAL smoothingFunction(const PFP2::REAL x, const PFP2::REAL h = M_H);
 

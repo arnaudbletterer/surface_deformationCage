@@ -38,7 +38,7 @@ public :
     void setNbVertices(int n)
     {
         m_verticesDerivatives.resize(n);
-        for(int i = 0; i < m_verticesDerivatives.size(); ++i)
+        for(unsigned int i = 0; i < m_verticesDerivatives.size(); ++i)
         {
             m_verticesDerivatives[i].setZero(2, 2); //Pour l'instant les déformations sont faites en 2 dimensions
         }
