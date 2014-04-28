@@ -389,12 +389,9 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
 
     sumMVC = 0.f;
 
-    CGoGNout << "-- Nouveau point --" << CGoGNendl;
-
     //Modification of coordinates
     for(i=0; i<weights.cols(); ++i)
     {
-        CGoGNout << "Weights (avant) : " << weights(0, i) << CGoGNendl;
         weights(0, i) = modifyingFunction(weights(0, i));
         sumMVC += weights(0, i);
     }
@@ -402,7 +399,6 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
     for(i=0; i<weights.cols(); ++i)
     {
         weights(0, i) /= sumMVC;
-        CGoGNout << "Weights (après) : " << weights(0, i) << CGoGNendl;
     }
 }
 
