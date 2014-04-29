@@ -17,7 +17,7 @@ class SpacePoint {
 public :
     Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic> m_cageWeightsEigen;
 
-    std::vector<PFP2::REAL> m_cageBoundaryWeights;
+    PFP2::REAL m_cageBoundaryWeight;
 
 private :
     Dart m_cageDart;
@@ -32,11 +32,6 @@ public :
     void setCageNbV(int n)
     {
         m_cageWeightsEigen.setZero(n);
-    }
-
-    void setNbAdjCages(int n)
-    {
-        m_cageBoundaryWeights.resize(n);
     }
 
     void setCage(Dart d)

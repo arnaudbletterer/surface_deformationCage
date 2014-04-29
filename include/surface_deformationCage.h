@@ -79,7 +79,7 @@ private :
      *Fonctions de l'article
      */
     void boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>& weights,
-                                std::vector<PFP2::REAL>& boundaryWeight);
+                                PFP2::REAL& boundaryWeight);
 
     PFP2::REAL smoothingFunction(const PFP2::REAL x, const PFP2::REAL h = M_H);
 
