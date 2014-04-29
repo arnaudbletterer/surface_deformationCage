@@ -14,13 +14,10 @@ namespace SCHNApps
 
 class SpacePoint {
 
-public :
-    Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic> m_cageWeightsEigen;
-
-    PFP2::REAL m_cageBoundaryWeight;
-
 private :
-    Dart m_cageDart;
+    std::vector<Dart> m_cagesDarts;
+    std::vector<Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic> > m_cagesWeightsEigen;
+    std::vector<PFP2::REAL> m_cagesBoundaryWeights;
 
 public :
     SpacePoint(int i = 0)
@@ -29,24 +26,55 @@ public :
     ~SpacePoint()
     {}
 
-    void setCageNbV(int n)
+    void setCage(Dart d, int n)
     {
-        m_cageWeightsEigen.setZero(n);
+        m_cagesDarts.push_back(d);
+        Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic> weights;
+        weights.resize(n);
+        m_cagesWeightsEigen.push_back(weights);
     }
 
-    void setCage(Dart d)
+    Dart getCageDart(int index)
     {
-        m_cageDart = d;
+        return m_cagesDarts[index];
     }
 
-    Dart getCageDart()
+    int getNbAssociatedCages()
     {
-        return m_cageDart;
+        return m_cagesDarts.size();
+    }
+
+    Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic>& getCageWeights(int index)
+    {
+        if(index >= 0 && index < m_cagesWeightsEigen.size())
+        {
+            return m_cagesWeightsEigen[index];
+        }
+    }
+
+    PFP2::REAL getCageBoundaryWeight(int index)
+    {
+        if(index >= 0 && index < m_cagesWeightsEigen.size())
+        {
+            return m_cagesBoundaryWeights[index];
+        }
+    }
+
+    int getCageIndex(Dart d)
+    {
+        for(int i = 0; i < m_cagesDarts.size(); ++i)
+        {
+            if(d == m_cagesDarts[i])
+            {
+                return i;
+            }
+        }
+        return -1;
     }
 
     bool isInitialized()
     {
-        return m_cageDart != EMBNULL;
+        return m_cagesDarts.size() == 0;
     }
 
     static std::string CGoGNnameOfType()
