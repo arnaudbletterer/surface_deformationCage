@@ -308,8 +308,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                     {
                         if(bb.contains(positionObject[dd]))
                         {
-                            CGoGNout << "yes" << CGoGNendl;
-                            spacepointobject[dd].addCage(d, cage->faceDegree(d));
+                            spacePointObject[dd].addCage(d, cage->faceDegree(d));
                             computePointMVCFromCage(dd, positionObject, positionCage,
                                                     spacePointObject[dd].getCageWeights(spacePointObject[dd].getNbAssociatedCages()-1),
                                                     cage, d, cage->faceDegree(d));
