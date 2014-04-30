@@ -121,26 +121,38 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
                         objectPositionEigen.setZero(1, 2);
                         objectFirstPositionEigen.setZero(1, 2);
 
-                        PFP2::REAL sumCur(1.f);
+                        PFP2::REAL sumTot(0.f);
 
-                        sumCur = smoothingFunction(spacePointObject[d].m_cageBoundaryWeight);
-
-                        int i = 0;
-                        Traversor2FV<PFP2::MAP> trav_vert_face_cage(*vcages, spacePointObject[d].getCageDart());
-                        for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
+                        for(int i = 0; i < spacePointObject[d].getNbAssociatedCages(); ++i)
                         {
-                            objectPositionEigen(0, 0) += spacePointObject[d].m_cageWeightsEigen(0, i) * positionVCages[dd][0];
-                            objectPositionEigen(0, 1) += spacePointObject[d].m_cageWeightsEigen(0, i) * positionVCages[dd][1];
-                            objectFirstPositionEigen(0, 0) += spacePointObject[d].m_cageWeightsEigen(0, i) * firstPositionVCages[dd][0];
-                            objectFirstPositionEigen(0, 1) += spacePointObject[d].m_cageWeightsEigen(0, i) * firstPositionVCages[dd][1];
-                            ++i;
+                            sumTot += smoothingFunction(spacePointObject[d].getCageBoundaryWeight(i));
                         }
 
-//                        CGoGNout << "Position object : " << objectPositionEigen(0, 0) << " ; " << objectPositionEigen(0, 1) << CGoGNendl;
-//                        CGoGNout << "First position object : " << objectFirstPositionEigen(0, 0) << " ; " << objectFirstPositionEigen(0, 1) << CGoGNendl;
+                        for(int i = 0; i < spacePointObject[d].getNbAssociatedCages(); ++i)
+                        {
 
-                        positionObject[d][0] = sumCur*objectPositionEigen(0, 0) + (1.f-sumCur)*objectFirstPositionEigen(0, 0);
-                        positionObject[d][1] = sumCur*objectPositionEigen(0, 1) + (1.f-sumCur)*objectFirstPositionEigen(0, 1);
+                            PFP2::REAL sumCur(0.f);
+
+                            sumCur = smoothingFunction(spacePointObject[d].getCageBoundaryWeight(i));
+
+                            PFP2::REAL sumCurNorm = sumCur/sumTot;  //Somme normalisée pour le mélange des différentes déformations appliquées
+
+                            Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic>* cageWeights = spacePointObject[d].getCageWeights(i);
+
+                            int j = 0;
+                            Traversor2FV<PFP2::MAP> trav_vert_face_cage(*vcages, spacePointObject[d].getCageDart(i));
+                            for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
+                            {
+                                objectPositionEigen(0, 0) += (*cageWeights)(0, j) * positionVCages[dd][0] * sumCurNorm * sumCur;
+                                objectPositionEigen(0, 1) += (*cageWeights)(0, j) * positionVCages[dd][1] * sumCurNorm * sumCur;
+                                objectFirstPositionEigen(0, 0) += (*cageWeights)(0, j) * firstPositionVCages[dd][0] * sumCurNorm * (1.f-sumCur);
+                                objectFirstPositionEigen(0, 1) += (*cageWeights)(0, j) * firstPositionVCages[dd][1] * sumCurNorm * (1.f-sumCur);
+                                ++j;
+                            }
+                        }
+
+                        positionObject[d][0] = objectPositionEigen(0, 0) + objectFirstPositionEigen(0, 0);
+                        positionObject[d][1] = objectPositionEigen(0, 1) + objectFirstPositionEigen(0, 1);
                     }
                 }
 
@@ -168,20 +180,22 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
             if(spacePointVCages.isValid())
             {
                 //Si les calculs de poids ont déjà été effectués
-                TraversorV<PFP2::MAP> trav_vert_object(*vcages);
-                for(Dart d = trav_vert_object.begin(); d != trav_vert_object.end(); d = trav_vert_object.next())
+                TraversorV<PFP2::MAP> trav_vert_vcages(*vcages);
+                for(Dart d = trav_vert_vcages.begin(); d != trav_vert_vcages.end(); d = trav_vert_vcages.next())
                 {
                     if(spacePointVCages[d].isInitialized())
                     {
                         Eigen::Matrix<PFP2::REAL, 1, 2> vCagesPositionEigen;
                         vCagesPositionEigen.setZero(1, 2);
 
+                        Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic>* cageWeights = spacePointVCages[d].getCageWeights(0);
+
                         int i = 0;
-                        Traversor2FV<PFP2::MAP> trav_vert_face_cage(*vcages, spacePointVCages[d].getCageDart());
+                        Traversor2FV<PFP2::MAP> trav_vert_face_cage(*vcages, spacePointVCages[d].getCageDart(0));
                         for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
                         {
-                            vCagesPositionEigen(0, 0) += spacePointVCages[d].m_cageWeightsEigen(0, i) * positionCage[dd][0];
-                            vCagesPositionEigen(0, 1) += spacePointVCages[d].m_cageWeightsEigen(0, i) * positionCage[dd][1];
+                            vCagesPositionEigen(0, 0) += (*cageWeights)(0, i) * positionCage[dd][0];
+                            vCagesPositionEigen(0, 1) += (*cageWeights)(0, i) * positionCage[dd][1];
                             ++i;
                         }
 
@@ -264,36 +278,73 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             mh_cage->registerAttribute(firstPositionCage);
         }
 
+//        FaceAttribute<int> idCageCage, idCageObject;
+
+//        if(!onlyInside)
+//        {
+
+//        }
+
         TraversorF<PFP2::MAP> trav_face_cage(*cage);
         for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
         {
             if(!cage->isBoundaryMarked2(d))
             {
-                Geom::BoundingBox<PFP2::VEC3> bb = Algo::Geometry::computeBoundingBox<PFP2>(*cage, positionCage);
-                PFP2::VEC3 min = bb.min();
-                PFP2::VEC3 max = bb.max();
-
-                Algo::Surface::Modelisation::swapVectorMax(min, max);
-
-                TraversorV<PFP2::MAP> trav_vert_object(*object);
-                for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
+                if(onlyInside)
                 {
-                    if(!onlyInside || isInCage(positionObject[dd],min, max))
+                    //Lors de l'association des points de l'espace avec la VCage
+                    Geom::BoundingBox<PFP2::VEC3> bb;
+
+                    //On enregistre la position initiale de chaque sommet de la cage
+                    Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, d);
+                    for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
                     {
-                        spacePointObject[dd].setCage(d);
-                        spacePointObject[dd].setCageNbV(cage->faceDegree(d));
-                        computePointMVCFromCage(dd, positionObject, positionCage, spacePointObject[dd].m_cageWeightsEigen, cage, d, cage->faceDegree(d));
+                        firstPositionCage[dd] = positionCage[dd];
+                        bb.addPoint(positionCage[dd]);
+                    }
+
+                    TraversorV<PFP2::MAP> trav_vert_object(*object);
+                    for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
+                    {
+                        if(bb.contains(positionObject[dd]))
+                        {
+                            CGoGNout << "yes" << CGoGNendl;
+                            spacepointobject[dd].addCage(d, cage->faceDegree(d));
+                            computePointMVCFromCage(dd, positionObject, positionCage,
+                                                    spacePointObject[dd].getCageWeights(spacePointObject[dd].getNbAssociatedCages()-1),
+                                                    cage, d, cage->faceDegree(d));
+                        }
                     }
                 }
-            }
-
-            if(onlyInside)
-            {
-                //On enregistre la position initiale de chaque sommet de la cage
-                Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, d);
-                for(Dart dd = trav_vert_face_cage.begin(); dd != trav_vert_face_cage.end(); dd = trav_vert_face_cage.next())
+                else
                 {
-                    firstPositionCage[dd] = positionCage[dd];
+                    //Lors de l'association de la Cage avec la VCage
+
+                    FaceAttribute<int> idCageCage = cage->getAttribute<int, FACE>("IdCage");
+                    if(!idCageCage.isValid())
+                    {
+                        CGoGNout << "IdCage attribute chosen for the cage isn't valid" << CGoGNendl;
+                        return;
+                    }
+
+                    FaceAttribute<int> idCageObject = object->getAttribute<int, FACE>("IdCage");
+                    if(!idCageObject.isValid())
+                    {
+                        CGoGNout << "IdCage attribute chosen for the object isn't valid" << CGoGNendl;
+                        return;
+                    }
+
+                    TraversorV<PFP2::MAP> trav_vert_object(*object);
+                    for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
+                    {
+                        if(idCageObject[dd] == idCageCage[d])
+                        {
+                            //Si la VCage courante corrspond bien à celle devant être associée à la Cage courante
+                            spacePointObject[dd].addCage(d, cage->faceDegree(d));
+                            computePointMVCFromCage(dd, positionObject, positionCage,
+                                                    spacePointObject[dd].getCageWeights(0), cage, d, cage->faceDegree(d));
+                        }
+                    }
                 }
             }
         }
@@ -322,8 +373,7 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
         {
             for(int i = 0; i < spacePointObject[d].getNbAssociatedCages(); ++i)
             {
-                boundaryWeightFunction(spacePointObject[d].getCageWeights(i),
-                                       spacePointObject[d].getCageBoundaryWeight(i));
+                spacePointObject[d].setCageBoundaryWeight(i, boundaryWeightFunction(spacePointObject[d].getCageWeights(i)));
             }
         }
     }
@@ -337,7 +387,7 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(PFP2::MAP* cage, PFP
 
 void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                                              const VertexAttribute<PFP2::VEC3>& positionCage,
-                                                             Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic>& weights,
+                                                             Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic>* weights,
                                                              PFP2::MAP* cage, Dart beginningDart, int cageNbV)
 {
     PFP2::REAL sumMVC(0.f);
@@ -346,7 +396,7 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
     bool stop = false;
     Dart next, prev;
 
-    weights.setZero(1, cageNbV);
+    weights->setZero(1, cageNbV);
 
     Traversor2FV<PFP2::MAP> trav_vert_face_cage(*cage, beginningDart);
     for(Dart d = trav_vert_face_cage.begin(); d != trav_vert_face_cage.end() && !stop; d = trav_vert_face_cage.next())
@@ -354,15 +404,15 @@ void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const
         next = cage->phi1(d);
         prev = cage->phi_1(d);
 
-        weights(0, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage, cage);
-        sumMVC += weights(0, i);
+        (*weights)(0, i) = computeMVC2D(positionObject[vertex], d, next, prev, positionCage, cage);
+        sumMVC += (*weights)(0, i);
         ++i;
     }
 
     //Coordinates normalization
-    for(i=0; i<weights.cols(); ++i)
+    for(i=0; i<weights->cols(); ++i)
     {
-        weights(0, i) /= sumMVC;
+        (*weights)(0, i) /= sumMVC;
     }
 }
 
@@ -614,14 +664,14 @@ PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Da
     return res;
 }
 
-void Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic>& weights,
-                                                            PFP2::REAL& boundaryWeight)
+PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic>* weights)
 {
-    boundaryWeight = 1.f;
-    for(int i = 0; i < weights.cols(); ++i)
+    PFP2::REAL res = 1.f;
+    for(int i = 0; i < weights->cols(); ++i)
     {
-        boundaryWeight *= (1.f - (weights(0, i) + weights(0, (i+1)%weights.cols())));
+        res *= (1.f - ((*weights)(0, i) + (*weights)(0, (i+1)%weights->cols())));
     }
+    return res;
 }
 
 PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL x, const PFP2::REAL h)

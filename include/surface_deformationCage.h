@@ -63,7 +63,7 @@ private :
 
     void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                  const VertexAttribute<PFP2::VEC3>& positionCage,
-                                 Eigen::Matrix<float, 1, Eigen::Dynamic>& weights,
+                                 Eigen::Matrix<float, 1, Eigen::Dynamic>* weights,
                                  PFP2::MAP* cage, Dart beginningDart, int cageNbV);
 
     PFP2::REAL modifyingFunction(const PFP2::REAL x);
@@ -78,8 +78,7 @@ private :
     /*
      *Fonctions de l'article
      */
-    void boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>& weights,
-                                PFP2::REAL& boundaryWeight);
+    PFP2::REAL boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>* weights);
 
     PFP2::REAL smoothingFunction(const PFP2::REAL x, const PFP2::REAL h = M_H);
 
