@@ -8,6 +8,7 @@
 #include "Eigen/Geometry"
 
 #include "Algo/Modelisation/voxellisation.h"
+#include "Algo/Modelisation/triangulation.h"
 
 #include <cmath>
 
@@ -26,7 +27,7 @@ namespace CGoGN
 namespace SCHNApps
 {
 
-#define M_H 1.f
+#define M_H 10.f
 
 class Surface_DeformationCage_Plugin : public PluginInteraction
 {
@@ -59,7 +60,7 @@ public:
     void computeMVCFromDialog();
 
 private :
-    void computeBoundaryWeights(PFP2::MAP* cage, PFP2::MAP* object);
+    void computeBoundaryWeights(PFP2::MAP* cage, PFP2::MAP* object, const PFP2::REAL h = M_H, bool recalcul = true);
 
     void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
                                  const VertexAttribute<PFP2::VEC3>& positionCage,

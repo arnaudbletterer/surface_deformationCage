@@ -243,7 +243,6 @@ void Dialog_DeformationCage::linkStateClicked()
 //        updateAppearanceFromPlugin();
 //    }
 }
-
 } // namespace SCHNApps
 
 } // namespace CGoGN

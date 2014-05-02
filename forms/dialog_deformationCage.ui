@@ -185,7 +185,7 @@
         <item>
          <widget class="QSlider" name="slider_boundary">
           <property name="maximum">
-           <number>100</number>
+           <number>500</number>
           </property>
           <property name="value">
            <number>100</number>
