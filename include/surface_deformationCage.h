@@ -27,7 +27,7 @@ namespace CGoGN
 namespace SCHNApps
 {
 
-#define M_H 10.f
+#define M_H 1.f
 
 class Surface_DeformationCage_Plugin : public PluginInteraction
 {
