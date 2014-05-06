@@ -10,6 +10,8 @@
 #include "Algo/Modelisation/voxellisation.h"
 #include "Algo/Modelisation/triangulation.h"
 
+#include "Algo/Geometry/inclusion.h"
+
 #include <cmath>
 
 #include "dialog_deformationCage.h"
