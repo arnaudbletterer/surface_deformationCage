@@ -28,6 +28,14 @@ public :
     ~SpacePoint()
     {}
 
+    void removeCages()
+    {
+        m_cagesDarts.clear();
+        m_cagesWeightsEigen.clear();
+        m_cagesBoundaryWeights.clear();
+        m_cagesHParameters.clear();
+    }
+
     void addCage(Dart d, int n)
     {
         m_cagesDarts.push_back(d);

@@ -78,6 +78,8 @@ private :
 
     void computeFirstDerivative(PFP2::MAP* cage);
 
+    void resetWeightsCalculated();
+
     /*
      *Fonctions de l'article
      */
