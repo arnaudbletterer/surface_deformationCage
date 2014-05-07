@@ -3,6 +3,8 @@
 
 #include "plugin_interaction.h"
 
+#include <QKeyEvent>
+
 #include "Utils/colorMaps.h"
 
 #include "Eigen/Geometry"
@@ -49,7 +51,7 @@ public:
     virtual void draw(View* view) {}
     virtual void drawMap(View* view, MapHandlerGen* map);
 
-    virtual void keyPress(View* view, QKeyEvent* event) {}
+    virtual void keyPress(View* view, QKeyEvent* event);
     virtual void keyRelease(View* view, QKeyEvent* event) {}
     virtual void mousePress(View* view, QMouseEvent* event) {}
     virtual void mouseRelease(View* view, QMouseEvent* event) {}

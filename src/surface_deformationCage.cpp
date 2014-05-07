@@ -64,6 +64,25 @@ void Surface_DeformationCage_Plugin::drawMap(View *view, MapHandlerGen *map)
     }
 }
 
+void Surface_DeformationCage_Plugin::keyPress(View* view, QKeyEvent* event)
+{
+    if(m_schnapps->getSelectedView() == view)
+    {
+        if(QApplication::keyboardModifiers() == Qt::ControlModifier)
+        {
+            switch(event->key())
+            {
+            case Qt::Key_R :
+                resetWeightsCalculated();
+                CGoGNout << "Coordonnées réinitialisées" << CGoGNendl;
+                break;
+            default:
+                break;
+            }
+        }
+    }
+}
+
 void Surface_DeformationCage_Plugin::boundarySliderValueChanged(int value)
 {
     MapHandlerGen* mhg_object = m_schnapps->getMap("Model");
