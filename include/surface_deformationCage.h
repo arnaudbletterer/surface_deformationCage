@@ -55,7 +55,7 @@ public:
     virtual void keyRelease(View* view, QKeyEvent* event) {}
     virtual void mousePress(View* view, QMouseEvent* event) {}
     virtual void mouseRelease(View* view, QMouseEvent* event) {}
-    virtual void mouseMove(View* view, QMouseEvent* event) {}
+    virtual void mouseMove(View* view, QMouseEvent* event);
     virtual void wheelEvent(View* view, QWheelEvent* event) {}
 
     virtual void viewLinked(View* view) {}
@@ -115,6 +115,9 @@ protected:
     Utils::VBO* m_colorVBO;
 
     bool m_toDraw;
+
+    bool m_movingVertices;
+    QPoint m_lastMousePosition;
 };
 
 } // namespace SCHNApps
