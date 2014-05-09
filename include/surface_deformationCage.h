@@ -117,7 +117,8 @@ protected:
     bool m_toDraw;
 
     bool m_movingVertices;
-    QPoint m_lastMousePosition;
+    bool m_movingVerticesInitiated;
+    qglviewer::Vec m_lastMousePosition;
 };
 
 } // namespace SCHNApps

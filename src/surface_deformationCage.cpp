@@ -23,6 +23,7 @@ bool Surface_DeformationCage_Plugin::enable()
     m_toDraw = false;
 
     m_movingVertices = false;
+    m_movingVerticesInitiated = false;
 
     connect(m_deformationCageAction, SIGNAL(triggered()), this, SLOT(openDeformationCageDialog()));
     connect(m_deformationCageDialog->slider_boundary, SIGNAL(valueChanged(int)), this, SLOT(boundarySliderValueChanged(int)));
@@ -89,13 +90,17 @@ void Surface_DeformationCage_Plugin::keyPress(View* view, QKeyEvent* event)
             case Qt::Key_D :
                 if(!m_movingVertices)
                 {
-                    m_lastMousePosition = QCursor::pos();
-                    CGoGNout << m_lastMousePosition.x() << CGoGNendl;
+                    CGoGNout << "--- DEBUT DEPLACEMENT DE SOMMETS ---" << CGoGNendl;
                     m_movingVertices = true;
+                    m_movingVerticesInitiated = false;
+                    view->setMouseTracking(true);
                 }
                 else
                 {
                     m_movingVertices = false;
+                    m_movingVerticesInitiated = false;
+                    CGoGNout << "--- FIN DEPLACEMENT DE SOMMETS ---" << CGoGNendl;
+                    view->setMouseTracking(false);
                 }
                 break;
             default:
@@ -107,28 +112,49 @@ void Surface_DeformationCage_Plugin::keyPress(View* view, QKeyEvent* event)
 
 void Surface_DeformationCage_Plugin::mouseMove(View* view, QMouseEvent* event)
 {
-    if(m_movingVertices)
+    if(m_movingVertices && m_schnapps->getSelectedMap()->getName().compare("Cages") == 0)
     {
-        PFP2::VEC3 deplacement = PFP2::VEC3(event->pos().x() - m_lastMousePosition.x(), event->pos().y() - m_lastMousePosition.y(), 0.f);
-        MapHandlerGen* mhg_selected = m_schnapps->getSelectedMap();
-        MapHandler<PFP2>* mh_selected = static_cast<MapHandler<PFP2>*>(mhg_selected);
-        PFP2::MAP* selectedMap = mh_selected->getMap();
-
-        VertexAttribute<PFP2::VEC3> positionSelectedMap = selectedMap->getAttribute<PFP2::VEC3, VERTEX>("position");
-        if(!positionSelectedMap.isValid())
+        if(m_movingVerticesInitiated)
         {
-            CGoGNout << "Position attribute isn't valid" << CGoGNendl;
+            qglviewer::Vec currentPixel(event->x(), event->y(), 0.5);
+            qglviewer::Vec currentPoint = view->camera()->unprojectedCoordinatesOf(currentPixel);
+            PFP2::VEC3 deplacement = PFP2::VEC3(currentPoint[0] - m_lastMousePosition[0], currentPoint[1] - m_lastMousePosition[1], 0.f);
+
+            MapHandlerGen* mhg_selected = m_schnapps->getSelectedMap();
+            MapHandler<PFP2>* mh_selected = static_cast<MapHandler<PFP2>*>(mhg_selected);
+            PFP2::MAP* selectedMap = mh_selected->getMap();
+
+            VertexAttribute<PFP2::VEC3> positionSelectedMap = selectedMap->getAttribute<PFP2::VEC3, VERTEX>("position");
+            if(!positionSelectedMap.isValid())
+            {
+                CGoGNout << "Position attribute isn't valid" << CGoGNendl;
+            }
+
+            CellSelectorGen* selectedSelector = m_schnapps->getSelectedSelector(VERTEX);
+            if(selectedSelector)
+            {
+                CellSelector<VERTEX>* selectedVerticesSelector = mhg_selected->getCellSelector<VERTEX>(selectedSelector->getName());
+
+                const std::vector<Dart>& selectedDarts = selectedVerticesSelector->getSelectedCells();
+
+                for(std::vector<Dart>::const_iterator it = selectedDarts.begin(); it != selectedDarts.end(); ++it)
+                {
+                    positionSelectedMap[*it] += deplacement;
+                }
+                m_lastMousePosition = currentPoint;
+
+                mh_selected->notifyAttributeModification(positionSelectedMap);
+                mh_selected->updateBB(positionSelectedMap);
+
+                view->updateGL();
+            }
         }
-
-        CellSelectorGen* selectedSelector = m_schnapps->getSelectedSelector(VERTEX);
-        CellSelector<VERTEX>* selectedVerticesSelector = mhg_selected->getCellSelector<VERTEX>(selectedSelector->getName());
-        const std::vector<Dart>& selectedDarts = selectedVerticesSelector->getSelectedCells();
-
-        for(std::vector<Dart>::const_iterator it = selectedDarts.begin(); it != selectedDarts.end(); ++it)
+        else
         {
-            positionSelectedMap[*it] += deplacement;
+            qglviewer::Vec currentPixel(event->x(), event->y(), 0.5);
+            m_lastMousePosition = view->camera()->unprojectedCoordinatesOf(currentPixel);
+            m_movingVerticesInitiated = true;
         }
-        view->updateGL();
     }
 }
 
