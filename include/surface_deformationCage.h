@@ -80,6 +80,7 @@ private :
     void computeFirstDerivative(PFP2::MAP* cage);
 
     void resetWeightsCalculated();
+    void clearCages();
 
     /*
      *Fonctions de l'article

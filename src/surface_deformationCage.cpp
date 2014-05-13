@@ -77,7 +77,9 @@ void Surface_DeformationCage_Plugin::keyPress(View* view, QKeyEvent* event)
             {
             case Qt::Key_R :
                 resetWeightsCalculated();
+                clearCages();
                 CGoGNout << "Coordonnées réinitialisées" << CGoGNendl;
+                view->updateGL();
                 break;
             default:
                 break;
@@ -196,6 +198,7 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
             PFP2::MAP* vcages = mh_cage->getMap();
 
             VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> positionVCages = vcages->getAttribute<PFP2::VEC3, VERTEX>("position");
+            VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> firstPositionVCages = vcages->getAttribute<PFP2::VEC3, VERTEX>("FirstPosition");
 
             MapHandlerGen* mhg_object = m_schnapps->getMap("Model");
             MapHandler<PFP2>* mh_object = static_cast<MapHandler<PFP2>*>(mhg_object);
@@ -203,8 +206,6 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
 
             VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> positionObject = object->getAttribute<PFP2::VEC3, VERTEX>("position");
             VertexAttribute<SpacePoint, PFP2::MAP::IMPL> spacePointObject = object->getAttribute<SpacePoint, VERTEX>("SpacePoint");
-
-            VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> firstPositionVCages = vcages->getAttribute<PFP2::VEC3, VERTEX>("FirstPosition");
 
             if(spacePointObject.isValid())
             {
@@ -556,6 +557,20 @@ void Surface_DeformationCage_Plugin::resetWeightsCalculated()
             spacePointModel[i].removeCages();
         }
     }
+}
+
+
+void Surface_DeformationCage_Plugin::clearCages()
+{
+    MapHandlerGen* mhg_tmp = m_schnapps->getMap("VCages");
+    MapHandler<PFP2>* mh_tmp = static_cast<MapHandler<PFP2>*>(mhg_tmp);
+
+    mh_tmp->clear(false);
+
+    mhg_tmp = m_schnapps->getMap("Cages");
+    mh_tmp = static_cast<MapHandler<PFP2>*>(mhg_tmp);
+
+    mhg_tmp->clear(false);
 }
 
 PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Dart current, Dart next, Dart previous,
