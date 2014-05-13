@@ -22,7 +22,6 @@
 
 //Attributes
 #include "spacePoint.h"
-#include "firstDerivative.h"
 #include "lastPosition.h"
 
 namespace CGoGN
@@ -66,17 +65,17 @@ public:
 private :
     void computeBoundaryWeights(MapHandler<PFP2>* mh_cage, MapHandler<PFP2>* mh_object, const PFP2::REAL h = M_H, bool recalcul = true);
 
-    void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
-                                 const VertexAttribute<PFP2::VEC3>& positionCage,
+    void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL>& positionObject,
+                                 const VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL>& positionCage,
                                  Eigen::Matrix<float, 1, Eigen::Dynamic>* weights,
                                  PFP2::MAP* cage, Dart beginningDart, int cageNbV);
 
     PFP2::REAL modifyingFunction(const PFP2::REAL x);
 
     PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
-                          const VertexAttribute<PFP2::VEC3>& positionCage);
+                          const VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL>& positionCage);
     PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart current, Dart next, Dart previous,
-                            const VertexAttribute<PFP2::VEC3>& positionCage, PFP2::MAP* cage);
+                            const VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL>& positionCage, PFP2::MAP* cage);
 
     void computeFirstDerivative(PFP2::MAP* cage);
 

@@ -124,7 +124,7 @@ void Surface_DeformationCage_Plugin::mouseMove(View* view, QMouseEvent* event)
             MapHandler<PFP2>* mh_selected = static_cast<MapHandler<PFP2>*>(mhg_selected);
             PFP2::MAP* selected = mh_selected->getMap();
 
-            VertexAttribute<PFP2::VEC3> positionSelectedMap = selected->getAttribute<PFP2::VEC3, VERTEX>("position");
+            VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> positionSelectedMap = selected->getAttribute<PFP2::VEC3, VERTEX>("position");
             if(!positionSelectedMap.isValid())
             {
                 CGoGNout << "Position attribute isn't valid" << CGoGNendl;
@@ -134,11 +134,11 @@ void Surface_DeformationCage_Plugin::mouseMove(View* view, QMouseEvent* event)
             CellSelectorGen* selectedSelector = m_schnapps->getSelectedSelector(VERTEX);
             if(selectedSelector)
             {
-                CellSelector<VERTEX>* selectedVerticesSelector = mhg_selected->getCellSelector<VERTEX>(selectedSelector->getName());
+                CellSelector<PFP2::MAP, VERTEX>* selectedVerticesSelector = static_cast<CellSelector<PFP2::MAP, VERTEX>*>(selectedSelector);
 
-                const std::vector<Dart>& selectedDarts = selectedVerticesSelector->getSelectedCells();
+                const std::vector<Cell<VERTEX>>& selectedDarts = selectedVerticesSelector->getSelectedCells();
 
-                for(std::vector<Dart>::const_iterator it = selectedDarts.begin(); it != selectedDarts.end(); ++it)
+                for(std::vector<Cell<VERTEX>>::const_iterator it = selectedDarts.begin(); it != selectedDarts.end(); ++it)
                 {
                     positionSelectedMap[*it] += deplacement;
                 }
@@ -195,16 +195,16 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
             //Quand la cage virtuelle est déplacée par la cage
             PFP2::MAP* vcages = mh_cage->getMap();
 
-            VertexAttribute<PFP2::VEC3> positionVCages = vcages->getAttribute<PFP2::VEC3, VERTEX>("position");
+            VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> positionVCages = vcages->getAttribute<PFP2::VEC3, VERTEX>("position");
 
             MapHandlerGen* mhg_object = m_schnapps->getMap("Model");
             MapHandler<PFP2>* mh_object = static_cast<MapHandler<PFP2>*>(mhg_object);
             PFP2::MAP* object = mh_object->getMap();
 
-            VertexAttribute<PFP2::VEC3> positionObject = object->getAttribute<PFP2::VEC3, VERTEX>("position");
-            VertexAttribute<SpacePoint> spacePointObject = object->getAttribute<SpacePoint, VERTEX>("SpacePoint");
+            VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> positionObject = object->getAttribute<PFP2::VEC3, VERTEX>("position");
+            VertexAttribute<SpacePoint, PFP2::MAP::IMPL> spacePointObject = object->getAttribute<SpacePoint, VERTEX>("SpacePoint");
 
-            VertexAttribute<PFP2::VEC3> firstPositionVCages = vcages->getAttribute<PFP2::VEC3, VERTEX>("FirstPosition");
+            VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> firstPositionVCages = vcages->getAttribute<PFP2::VEC3, VERTEX>("FirstPosition");
 
             if(spacePointObject.isValid())
             {
@@ -265,7 +265,7 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
             //Quand la cage avec laquelle l'utilisateur interagit est modifiée
             PFP2::MAP* cage = mh_cage->getMap();
 
-            VertexAttribute<PFP2::VEC3> positionCage = cage->getAttribute<PFP2::VEC3, VERTEX>("position");
+            VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> positionCage = cage->getAttribute<PFP2::VEC3, VERTEX>("position");
             if(!positionCage.isValid())
             {
                 CGoGNout << "Position attribute chosen for the cage isn't valid" << CGoGNendl;
@@ -279,9 +279,9 @@ void Surface_DeformationCage_Plugin::attributeModified(unsigned int orbit, QStri
             {
                 PFP2::MAP* vcages = mh_vcages->getMap();
 
-                VertexAttribute<PFP2::VEC3> positionVCages = vcages->getAttribute<PFP2::VEC3, VERTEX>("position");
-                VertexAttribute<SpacePoint> spacePointVCages = vcages->getAttribute<SpacePoint, VERTEX>("SpacePoint");
-                VertexAttribute<PFP2::VEC3> linkCagesVCages = vcages->getAttribute<PFP2::VEC3, VERTEX>("LinkCages");
+                VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> positionVCages = vcages->getAttribute<PFP2::VEC3, VERTEX>("position");
+                VertexAttribute<SpacePoint, PFP2::MAP::IMPL> spacePointVCages = vcages->getAttribute<SpacePoint, VERTEX>("SpacePoint");
+                VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> linkCagesVCages = vcages->getAttribute<PFP2::VEC3, VERTEX>("LinkCages");
 
                 if(positionVCages.isValid() && spacePointVCages.isValid() && linkCagesVCages.isValid())
                 {
@@ -328,34 +328,34 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
         PFP2::MAP* cage = mh_cage->getMap();
         PFP2::MAP* object = mh_object->getMap();
 
-        VertexAttribute<PFP2::VEC3> colorObject = object->getAttribute<PFP2::VEC3, VERTEX>("color");
+        VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> colorObject = object->getAttribute<PFP2::VEC3, VERTEX>("color");
         if(!colorObject.isValid())
         {
             colorObject = object->addAttribute<PFP2::VEC3, VERTEX>("color");
         }
 
-        VertexAttribute<PFP2::VEC3> positionObject = object->getAttribute<PFP2::VEC3, VERTEX>(objectNameAttr.toStdString());
+        VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> positionObject = object->getAttribute<PFP2::VEC3, VERTEX>(objectNameAttr.toStdString());
         if(!positionObject.isValid())
         {
             CGoGNout << "Position attribute chosen for the object isn't valid" << CGoGNendl;
             exit(-1);
         }
 
-        VertexAttribute<SpacePoint> spacePointObject = object->getAttribute<SpacePoint, VERTEX>("SpacePoint");
+        VertexAttribute<SpacePoint, PFP2::MAP::IMPL> spacePointObject = object->getAttribute<SpacePoint, VERTEX>("SpacePoint");
         if(!spacePointObject.isValid())
         {
             spacePointObject = object->addAttribute<SpacePoint, VERTEX>("SpacePoint");
             mh_object->registerAttribute(spacePointObject);
         }
 
-        VertexAttribute<PFP2::VEC3> positionCage = cage->getAttribute<PFP2::VEC3, VERTEX>(cageNameAttr.toStdString());
+        VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> positionCage = cage->getAttribute<PFP2::VEC3, VERTEX>(cageNameAttr.toStdString());
         if(!positionCage.isValid())
         {
             CGoGNout << "Position attribute chosen for the cage isn't valid" << CGoGNendl;
             exit(-1);
         }
 
-        VertexAttribute<PFP2::VEC3> firstPositionCage = cage->getAttribute<PFP2::VEC3, VERTEX>("FirstPosition");
+        VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> firstPositionCage = cage->getAttribute<PFP2::VEC3, VERTEX>("FirstPosition");
         if(!firstPositionCage.isValid() && onlyInside)
         {
             firstPositionCage = cage->addAttribute<PFP2::VEC3, VERTEX>("FirstPosition");
@@ -365,7 +365,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
         TraversorF<PFP2::MAP> trav_face_cage(*cage);
         for(Dart d = trav_face_cage.begin(); d != trav_face_cage.end(); d = trav_face_cage.next())
         {
-            if(!cage->isBoundaryMarked2(d))
+            if(!cage->isBoundaryMarked<2>(d))
             {
                 if(onlyInside)
                 {
@@ -410,14 +410,14 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(MapHandler<PFP2>* mh
     PFP2::MAP* object = mh_object->getMap();
 
     TraversorV<PFP2::MAP> trav_vert_object(*object);
-    VertexAttribute<SpacePoint> spacePointObject = object->getAttribute<SpacePoint, VERTEX>("SpacePoint");
+    VertexAttribute<SpacePoint, PFP2::MAP::IMPL> spacePointObject = object->getAttribute<SpacePoint, VERTEX>("SpacePoint");
     if(!spacePointObject.isValid())
     {
         CGoGNout << "SpacePointObject attribute is not valid" << CGoGNendl;
         exit(-1);
     }
 
-    VertexAttribute<PFP2::VEC3> colorObject = object->getAttribute<PFP2::VEC3, VERTEX>("color");
+    VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> colorObject = object->getAttribute<PFP2::VEC3, VERTEX>("color");
     if(!colorObject.isValid())
     {
         colorObject = object->addAttribute<PFP2::VEC3, VERTEX>("color");
@@ -452,8 +452,8 @@ void Surface_DeformationCage_Plugin::computeBoundaryWeights(MapHandler<PFP2>* mh
     m_schnapps->getSelectedView()->updateGL();
 }
 
-void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3>& positionObject,
-                                                             const VertexAttribute<PFP2::VEC3>& positionCage,
+void Surface_DeformationCage_Plugin:: computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL>& positionObject,
+                                                             const VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL>& positionCage,
                                                              Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic>* weights,
                                                              PFP2::MAP* cage, Dart beginningDart, int cageNbV)
 {
@@ -503,7 +503,7 @@ PFP2::REAL Surface_DeformationCage_Plugin::modifyingFunction(const PFP2::REAL x)
     }
 }
 
-PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3>& positionCage)
+PFP2::REAL Surface_DeformationCage_Plugin::computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage, const VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL>& positionCage)
 {
     PFP2::REAL r = (positionCage[vertex]-pt).norm();
 
@@ -548,7 +548,7 @@ void Surface_DeformationCage_Plugin::resetWeightsCalculated()
     MapHandler<PFP2>* mh_model = static_cast<MapHandler<PFP2>*>(mhg_model);
     PFP2::MAP* model = mh_model->getMap();
 
-    VertexAttribute<SpacePoint> spacePointModel = model->getAttribute<SpacePoint, VERTEX>("SpacePoint");
+    VertexAttribute<SpacePoint, PFP2::MAP::IMPL> spacePointModel = model->getAttribute<SpacePoint, VERTEX>("SpacePoint");
     if(spacePointModel.isValid())
     {
         for(unsigned int i = spacePointModel.begin(); i != spacePointModel.end(); spacePointModel.next(i))
@@ -559,7 +559,7 @@ void Surface_DeformationCage_Plugin::resetWeightsCalculated()
 }
 
 PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Dart current, Dart next, Dart previous,
-                                                        const VertexAttribute<PFP2::VEC3>& positionCage, PFP2::MAP* cage)
+                                                        const VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL>& positionCage, PFP2::MAP* cage)
 {
     PFP2::REAL res(1.f);
 

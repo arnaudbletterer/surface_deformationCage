@@ -51,7 +51,7 @@ public :
         {
             return m_cagesDarts[index];
         }
-        return EMBNULL;
+        return Dart::nil();
     }
 
     int getNbAssociatedCages()
