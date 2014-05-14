@@ -116,6 +116,8 @@ protected:
 
     bool m_toDraw;
 
+    bool m_clearingCages;
+
     bool m_movingVertices;
     bool m_movingVerticesInitiated;
     qglviewer::Vec m_lastMousePosition;
