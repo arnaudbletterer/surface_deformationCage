@@ -63,7 +63,8 @@ public:
     void computeMVCFromDialog();
 
 private :
-    void computeBoundaryWeights(MapHandler<PFP2>* mh_cage, MapHandler<PFP2>* mh_object, const PFP2::REAL h = M_H, bool recalcul = true);
+    void computeBoundaryWeights(MapHandler<PFP2>* mh_object);
+    void computeColorMap(MapHandler<PFP2>* mh_object, MapHandler<PFP2>* mh_cage);
 
     void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL>& positionObject,
                                  const VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL>& positionCage,

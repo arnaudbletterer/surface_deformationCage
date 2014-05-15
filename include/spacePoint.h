@@ -19,8 +19,6 @@ private :
     std::vector<Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic> > m_cagesWeightsEigen;
     std::vector<PFP2::REAL> m_cagesBoundaryWeights;
 
-    std::vector<PFP2::REAL> m_cagesHParameters;
-
 public :
     SpacePoint(int i = 0)
     {}
@@ -33,7 +31,6 @@ public :
         m_cagesDarts.clear();
         m_cagesWeightsEigen.clear();
         m_cagesBoundaryWeights.clear();
-        m_cagesHParameters.clear();
     }
 
     void addCage(Dart d, int n)
@@ -83,27 +80,6 @@ public :
         {
             m_cagesBoundaryWeights[index] = value;
         }
-    }
-
-    PFP2::REAL getCageHParameter(int index)
-    {
-        if(index >= 0 && index < m_cagesBoundaryWeights.size())
-        {
-            return m_cagesHParameters[index];
-        }
-    }
-
-    void setCageHParameter(int index, PFP2::REAL value)
-    {
-        if(index >= 0 && index < m_cagesBoundaryWeights.size())
-        {
-            m_cagesHParameters[index] = value;
-        }
-    }
-
-    void addCageHParameter(PFP2::REAL value)
-    {
-        m_cagesHParameters.push_back(value);
     }
 
     int getCageIndex(Dart dart)
