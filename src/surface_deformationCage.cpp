@@ -402,7 +402,7 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
                 }
             }
             computeBoundaryWeights(mh_object);
-//            computeColorMap(mh_object, mh_cage);
+            computeColorMap(mh_object, mh_cage);
 
             VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> colorObject = mh_object->getAttribute<PFP2::VEC3, VERTEX>("color");
 
@@ -466,20 +466,21 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             {
                 if(!object->isBoundaryMarked<2>(d))
                 {
-                    PFP2::REAL moyBoundaryWeight(0.f);  //Valeur supérieure à n'importe quelle poids de bordure (0 <= x <= 1)
-                    int compteur = 0;
+                    PFP2::REAL minBoundaryWeight(2.f);  //Valeur supérieure à n'importe quelle poids de bordure (0 <= x <= 1)
 
                     TraversorV<PFP2::MAP> trav_vert_cage(*cage);
                     for(Dart dd = trav_vert_cage.begin(); dd != trav_vert_cage.end(); dd = trav_vert_cage.next())
                     {
                         if(idCageCage[dd] == idCageObject[d])
                         {
-                            moyBoundaryWeight += spacePointCage[dd].getCageBoundaryWeight(0);
-                            ++compteur;
+                            if(spacePointCage[dd].getCageBoundaryWeight(0) < minBoundaryWeight)
+                            {
+                                minBoundaryWeight = spacePointCage[dd].getCageBoundaryWeight(0);
+                            }
                         }
                     }
 
-                    minBoundaryWeightObject[d] = moyBoundaryWeight/compteur;
+                    minBoundaryWeightObject[d] = minBoundaryWeight;
                 }
             }
         }
@@ -538,12 +539,20 @@ void Surface_DeformationCage_Plugin::computeColorMap(MapHandler<PFP2>* mh_object
     TraversorV<PFP2::MAP> trav_vert_object(*object);
     for(Dart d = trav_vert_object.begin(); d != trav_vert_object.end(); d = trav_vert_object.next())
     {
-        for(int i = 0; i < spacePointObject[d].getNbAssociatedCages(); ++i)
+        if(spacePointObject[d].getNbAssociatedCages() > 0)
         {
-            color = Utils::color_map_BCGYR(spacePointObject[d].getCageBoundaryWeight(i));
-            colorObject[d][0] = color[0];
-            colorObject[d][1] = color[1];
-            colorObject[d][2] = color[2];
+            for(int i = 0; i < spacePointObject[d].getNbAssociatedCages(); ++i)
+            {
+                PFP2::REAL weight(smoothingFunction(spacePointObject[d].getCageBoundaryWeight(i), minBoundaryWeightCage[spacePointObject[d].getCageDart(i)]));
+                color = Utils::color_map_BCGYR(weight);
+                colorObject[d][0] = color[0];
+                colorObject[d][1] = color[1];
+                colorObject[d][2] = color[2];
+            }
+        }
+        else
+        {
+            colorObject[d] = PFP2::VEC3(0.f, 0.f, 1.f);
         }
     }
 
@@ -671,12 +680,43 @@ void Surface_DeformationCage_Plugin::clearCages()
 
     mh_tmp->updateBB(Geom::BoundingBox<PFP2::VEC3>(PFP2::VEC3(0.f, 0.f, 0.f)));
 
-    CellSelectorSet cs_set = mh_tmp->getCellSelectorSet(VERTEX);
-    for(CellSelectorSet::ConstIterator it = cs_set.constBegin(); it != cs_set.constEnd(); ++it)
+//    CellSelectorSet cs_set = mh_tmp->getCellSelectorSet(VERTEX);
+
+//    CGoGNout << cs_set.size() << CGoGNendl;
+
+//    for(CellSelectorSet::ConstIterator it = cs_set.constBegin(); it != cs_set.constEnd(); ++it)
+//    {
+//        CellSelector<PFP2::MAP, VERTEX>* cs = static_cast<CellSelector<PFP2::MAP, VERTEX>*>(it.value());
+//        CGoGNout << "Avant : " << cs->getNbSelectedCells() << CGoGNendl;
+//        cs->unselect(cs->getSelectedCells());
+//        CGoGNout << "Après : " << cs->getNbSelectedCells() << CGoGNendl;
+//    }
+
+    CellSelector<PFP2::MAP, VERTEX>* cs = static_cast<CellSelector<PFP2::MAP, VERTEX>*>(m_schnapps->getSelectedSelector(VERTEX));
+    if(cs)
     {
-        CellSelector<PFP2::MAP, VERTEX>* cs = static_cast<CellSelector<PFP2::MAP, VERTEX>*>(it.value());
         cs->unselect(cs->getSelectedCells());
     }
+
+    mhg_tmp = m_schnapps->getMap("Model");
+    mh_tmp = static_cast<MapHandler<PFP2>*>(mhg_tmp);
+    PFP2::MAP* tmp = mh_tmp->getMap();
+
+    VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> colorTmp = mh_tmp->getAttribute<PFP2::VEC3, VERTEX>("color");
+    if(!colorTmp.isValid())
+    {
+        CGoGNout << "Color attribute is not valid" << CGoGNendl;
+        exit(-1);
+    }
+
+    TraversorV<PFP2::MAP> trav_vert_tmp(*tmp);
+    for(Dart d = trav_vert_tmp.begin(); d != trav_vert_tmp.end(); d = trav_vert_tmp.next())
+    {
+        colorTmp[d] = PFP2::VEC3(0.f, 0.f, 0.f);
+    }
+
+    m_colorVBO->updateData(colorTmp);
+
 }
 
 PFP2::REAL Surface_DeformationCage_Plugin::computeMVC2D(const PFP2::VEC3& pt, Dart current, Dart next, Dart previous,
@@ -720,7 +760,10 @@ PFP2::REAL Surface_DeformationCage_Plugin::boundaryWeightFunction(const Eigen::M
     {
         res *= (1.f - ((*weights)(0, i) + (*weights)(0, (i+1)%weights->cols())));
     }
-    return res/std::pow(2.f/weights->cols(), weights->cols());
+
+    return res;
+
+    //return res/std::pow(2.f/weights->cols(), weights->cols());
 }
 
 PFP2::REAL Surface_DeformationCage_Plugin::smoothingFunction(const PFP2::REAL x, const PFP2::REAL h)

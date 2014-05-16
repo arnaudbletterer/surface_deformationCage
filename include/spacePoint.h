@@ -42,9 +42,9 @@ public :
         m_cagesBoundaryWeights.push_back(-1.f);
     }
 
-    Dart getCageDart(int index)
+    Dart getCageDart(unsigned int index)
     {
-        if(index >= 0 && index < m_cagesDarts.size())
+        if(index < m_cagesDarts.size())
         {
             return m_cagesDarts[index];
         }
@@ -56,27 +56,27 @@ public :
         return m_cagesDarts.size();
     }
 
-    Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic>* getCageWeights(int index)
+    Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic>* getCageWeights(unsigned int index)
     {
-        if(index >= 0 && index < m_cagesWeightsEigen.size())
+        if(index < m_cagesWeightsEigen.size())
         {
             return &(m_cagesWeightsEigen[index]);
         }
         return NULL;
     }
 
-    PFP2::REAL getCageBoundaryWeight(int index)
+    PFP2::REAL getCageBoundaryWeight(unsigned int index)
     {
-        if(index >= 0 && index < m_cagesWeightsEigen.size())
+        if(index < m_cagesWeightsEigen.size())
         {
             return m_cagesBoundaryWeights[index];
         }
         return -1.f;
     }
 
-    void setCageBoundaryWeight(int index, PFP2::REAL value)
+    void setCageBoundaryWeight(unsigned int index, PFP2::REAL value)
     {
-        if(index >= 0 && index < m_cagesBoundaryWeights.size())
+        if(index < m_cagesBoundaryWeights.size())
         {
             m_cagesBoundaryWeights[index] = value;
         }
@@ -84,7 +84,7 @@ public :
 
     int getCageIndex(Dart dart)
     {
-        for(int i = 0; i < m_cagesDarts.size(); ++i)
+        for(unsigned int i = 0; i < m_cagesDarts.size(); ++i)
         {
             if(dart == m_cagesDarts[i])
             {
