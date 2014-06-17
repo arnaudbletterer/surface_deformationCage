@@ -46,7 +46,7 @@ public :
 
     bool isInitialized()
     {
-        return m_beginningDart != EMBNULL;
+        return !m_beginningDart.isNil();
     }
 
     static std::string CGoGNnameOfType()
