@@ -408,6 +408,29 @@ void Surface_DeformationCage_Plugin::computeAllPointsFromObject(const QString& o
             computeBoundaryWeights(mh_object);
 //            computeColorMap(mh_object, mh_cage);
 
+//            CGoGNStream::Out fichier;
+//            fichier.toFile("/home/bletterer/plot3d_MVC_withFunction.gp");
+
+//            TraversorV<PFP2::MAP> trav_vert_object(*object);
+//            for(Dart dd = trav_vert_object.begin(); dd != trav_vert_object.end(); dd = trav_vert_object.next())
+//            {
+//                if(fabs(positionObject[dd][1]) < FLT_EPSILON)
+//                {
+//                    if(spacePointObject[dd].getNbAssociatedCages()>0)
+//                    {
+////                        fichier << positionObject[dd][0] << " " << spacePointObject[dd].getCageBoundaryWeight(0)*16 << CGoGNendl;
+//                        //CGoGNout << spacePointObject[dd].getCageBoundaryWeight(0) << CGoGNendl;
+//                        fichier << positionObject[dd][0] << " " << smoothingFunction(spacePointObject[dd].getCageBoundaryWeight(0), 1.f/16) << CGoGNendl;
+//                    }
+//                    else
+//                    {
+//                        fichier << positionObject[dd][0] << " " << 0. << CGoGNendl;
+//                    }
+//                }
+//            }
+
+//            fichier.close();
+
             VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL> colorObject = mh_object->getAttribute<PFP2::VEC3, VERTEX>("color");
 
             m_colorVBO->updateData(colorObject);
