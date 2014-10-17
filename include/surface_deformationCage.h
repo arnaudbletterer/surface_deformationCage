@@ -9,9 +9,6 @@
 
 #include "Eigen/Geometry"
 
-#include "Algo/Modelisation/voxellisation.h"
-#include "Algo/Modelisation/triangulation.h"
-
 #include "Algo/Geometry/inclusion.h"
 
 #include <cmath>
@@ -34,49 +31,58 @@ namespace SCHNApps
 
 class Surface_DeformationCage_Plugin : public PluginInteraction
 {
-	Q_OBJECT
-	Q_INTERFACES(CGoGN::SCHNApps::Plugin)
+    Q_OBJECT
+    Q_INTERFACES(CGoGN::SCHNApps::Plugin)
 
-public:
+public :
     Surface_DeformationCage_Plugin()
-	{}
+    {
+    }
 
     ~Surface_DeformationCage_Plugin()
-	{}
+    {
+    }
 
-	virtual bool enable();
-	virtual void disable();
+    virtual bool enable();
+    virtual void disable();
 
-    virtual void draw(View* view) {}
+    virtual void draw(View* view) {
+    }
     virtual void drawMap(View* view, MapHandlerGen* map);
 
     virtual void keyPress(View* view, QKeyEvent* event);
-    virtual void keyRelease(View* view, QKeyEvent* event) {}
-    virtual void mousePress(View* view, QMouseEvent* event) {}
-    virtual void mouseRelease(View* view, QMouseEvent* event) {}
+    virtual void keyRelease(View* view, QKeyEvent* event) {
+    }
+    virtual void mousePress(View* view, QMouseEvent* event) {
+    }
+    virtual void mouseRelease(View* view, QMouseEvent* event) {
+    }
     virtual void mouseMove(View* view, QMouseEvent* event);
-    virtual void wheelEvent(View* view, QWheelEvent* event) {}
+    virtual void wheelEvent(View* view, QWheelEvent* event) {
+    }
 
-    virtual void viewLinked(View* view) {}
-    virtual void viewUnlinked(View* view) {}
+    virtual void viewLinked(View* view) {
+    }
+    virtual void viewUnlinked(View* view) {
+    }
 
     void computeMVCFromDialog();
 
-private :
+private:
     void computeBoundaryWeights(MapHandler<PFP2>* mh_object);
     void computeColorMap(MapHandler<PFP2>* mh_object, MapHandler<PFP2>* mh_cage);
 
-    void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL>& positionObject,
-                                 const VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL>& positionCage,
+    void computePointMVCFromCage(Dart vertex, const VertexAttribute<PFP2::VEC3, PFP2::MAP>& positionObject,
+                                 const VertexAttribute<PFP2::VEC3, PFP2::MAP>& positionCage,
                                  Eigen::Matrix<float, 1, Eigen::Dynamic>* weights,
                                  PFP2::MAP* cage, Dart beginningDart, int cageNbV);
 
     PFP2::REAL modifyingFunction(const PFP2::REAL x);
 
     PFP2::REAL computeMVC(const PFP2::VEC3& pt, Dart vertex, PFP2::MAP* cage,
-                          const VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL>& positionCage);
+                          const VertexAttribute<PFP2::VEC3, PFP2::MAP>& positionCage);
     PFP2::REAL computeMVC2D(const PFP2::VEC3& pt, Dart current, Dart next, Dart previous,
-                            const VertexAttribute<PFP2::VEC3, PFP2::MAP::IMPL>& positionCage, PFP2::MAP* cage);
+                            const VertexAttribute<PFP2::VEC3, PFP2::MAP>& positionCage, PFP2::MAP* cage);
 
     void computeFirstDerivative(PFP2::MAP* cage);
 
@@ -84,8 +90,8 @@ private :
     void clearCages();
 
     /*
-     *Fonctions de l'article
-     */
+                                   *Fonctions de l'article
+                                 */
     PFP2::REAL boundaryWeightFunction(const Eigen::Matrix<float, 1, Eigen::Dynamic>* weights);
 
     PFP2::REAL smoothingFunction(const PFP2::REAL x, const PFP2::REAL h = M_H);
@@ -93,8 +99,8 @@ private :
     bool isInCage(const PFP2::VEC3& point, const PFP2::VEC3& min, const PFP2::VEC3& max);
 
 private slots:
-	void mapAdded(MapHandlerGen* map);
-	void mapRemoved(MapHandlerGen* map);
+    void mapAdded(MapHandlerGen* map);
+    void mapRemoved(MapHandlerGen* map);
 
     void attributeModified(unsigned int orbit, QString nameAttr);
 
@@ -129,4 +135,3 @@ protected:
 } // namespace CGoGN
 
 #endif
-

@@ -14,17 +14,19 @@ namespace SCHNApps
 
 class SpacePoint {
 
-private :
+private:
     std::vector<Dart> m_cagesDarts;
     std::vector<Eigen::Matrix<PFP2::REAL, 1, Eigen::Dynamic> > m_cagesWeightsEigen;
     std::vector<PFP2::REAL> m_cagesBoundaryWeights;
 
-public :
+public:
     SpacePoint(int i = 0)
-    {}
+    {
+    }
 
     ~SpacePoint()
-    {}
+    {
+    }
 
     void removeCages()
     {
@@ -92,6 +94,11 @@ public :
             }
         }
         return -1;
+    }
+
+    friend std::ostream& operator<< (std::ostream& stream, const SpacePoint &point)
+    {
+        return stream;
     }
 
     bool isInitialized()
